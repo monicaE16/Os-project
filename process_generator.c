@@ -52,8 +52,7 @@ int main(int argc, char *argv[])
     // Creating a dynamic array of size of lines read from the file
     pData = (struct processData *)malloc(len * sizeof(struct processData));
     int index = 0;
-    int *head;
-    *head = 0;
+    int head = 0;
     int tail = -1;
 
     while ((read = getline(&line, &len, fp)) != -1)
@@ -78,7 +77,7 @@ int main(int argc, char *argv[])
             pData[index++] = current_process;
 
             // Rearrange the array by the arrival time of the processes
-            bool changed = RearrangeByArrivalTime(pData, index, head, tail);
+            bool changed = RearrangeByArrivalTime(pData, index, &head, tail);
             if (!changed)
             {
                 tail= index-1;
@@ -90,7 +89,7 @@ int main(int argc, char *argv[])
     // 2. Read the chosen scheduling algorithm and its parameters, if there are any from the argument list.
     int algoChosen = -1;
     int quantum = -1;
-    for (int i = 2; i < argc - 1; i++)
+    for (int i = 1; i < argc - 1; i++)
     {
         if (strcmp(argv[i], "-sch"))
         {
@@ -154,10 +153,10 @@ int main(int argc, char *argv[])
         // To get time use this function.
         int x = getClk();
         printf("Current Time is %d\n", x);
-        while (x == pData[*head].arrivaltime)
+        while (x == pData[head].arrivaltime)
         {
-            printf("SENDING PROCESS %d next %d prev %d\n", pData[*head].id, pData[*head].id_next_process, pData[*head].id_prev_process);
-            *head = pData[*head].id_next_process;
+            printf("SENDING PROCESS %d next %d prev %d\n", pData[head].id, pData[head].id_next_process, pData[head].id_prev_process);
+            head = pData[head].id_next_process;
         }
 
         while (x == getClk())

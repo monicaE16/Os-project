@@ -1,30 +1,12 @@
 #include <string.h>
 #include "headers.h"
-
-struct processData
-{
-    int arrivaltime;
-    int priority;
-    int runningtime;
-    int id;
-    // int id_next_process;
-    // int id_prev_process;
-};
-
-struct pcb
-{
-    struct processData process;
-    int state; // 0 = started, 1 = resumed, 2 = stopped, 3 = finished.
-    int excutionTime;
-    int remainingTime;
-    int waitingTime;
-};
+#include "dataStructures.h"
 
 struct msgbuff
 {
     long mtype;
     // char mtext[256];
-    struct processData mmsg;
+     processData mmsg;
 };
 
 int main(int argc, char *argv[])
@@ -50,7 +32,7 @@ int main(int argc, char *argv[])
     struct msgbuff process;
     printf("Hello frm scheduler!\n");
     int index = 0;
-    struct pcb *pData = (struct pcb *)malloc(1 * sizeof(struct pcb));
+     pcb *pData = (struct pcb *)malloc(1 * sizeof( pcb));
     while (1)
     {
         // To get time use this function.
@@ -73,7 +55,8 @@ int main(int argc, char *argv[])
                 current_process_b.waitingTime = 0;
 
                 pData[index++] = current_process_b;
-                void *newpData = (struct pcb *)realloc(pData, (index + 1) * sizeof(struct pcb));
+                void *newpData = ( pcb *)realloc(pData,(index+1) * sizeof( pcb));
+
 
                 /*
                     int excutionTime;
@@ -81,26 +64,29 @@ int main(int argc, char *argv[])
             }
         }
 
-        // for(int i = 0 ;i<index ; i++){
-        //     printf("%d    \n", pData[i].process.id);
-        // }
+     
 
-        // while (x == pData[head].arrivaltime)
-        // {
-        // printf("SENDING PROCESS %d \n", pData[head].id);
-        // head = pData[head].id_next_process;
-        // process.mtype = 0;
-        // process.mmsg = pData[head];
-        //     head ++;
-        // }
 
-        // while (x == getClk())
-        // {
-        // }
+
+
+
+
     }
 
     //TODO: implement the scheduler.
     //TODO: upon termination release the clock resources.
 
     destroyClk(true);
+}
+
+void HighestPriorityFirst()
+{
+
+// I need to create a priority queue first 
+
+
+
+
+
+
 }

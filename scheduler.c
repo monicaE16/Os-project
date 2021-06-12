@@ -1,4 +1,5 @@
 #include "headers.h"
+#include <string.h>
 
 struct processData
 {
@@ -28,18 +29,16 @@ struct msgbuff
 
 int main(int argc, char *argv[])
 {
-printf("ARGC: %d", argc);
-
-    for(int i= 0;i<argc;i++){
-        printf("%s     ", argv[i]);
-    }
+    char *algo;
+    strcpy(algo,argv[1]);
+    printf("ARGC: %d\tARGUMENT SENT: %s\n",argc, algo);
 
     key_t process_key_id;
     int process_msgq_id;
 
     process_key_id = ftok("keyfile", 'a'); //create unique key
-    
-    printf("ALGO CHOSEN: %s   %s  %s\n",argv[0], argv[1], argv[2]);
+
+    printf("ALGO CHOSEN: %s   %s  %s\n", argv[0], argv[1], argv[2]);
 
     process_msgq_id = msgget(process_key_id, 0666 | IPC_CREAT); //create message queue and return id
     if (process_msgq_id == -1)
@@ -50,7 +49,7 @@ printf("ARGC: %d", argc);
 
     initClk();
     struct msgbuff process;
-    printf("Hello frm scheduler!");
+    printf("Hello frm scheduler!\n");
     int index = 0;
     struct pcb *pData = (struct pcb *)malloc(1 * sizeof(struct pcb));
     while (1)
@@ -67,15 +66,15 @@ printf("ARGC: %d", argc);
 
             if (rec_val != -1)
             {
-                printf("\nMessage received in server: ---------------------------------------------------------------------------------%d\n", process.mmsg.id);
+                printf("Message received in server: %d\n", process.mmsg.id);
                 struct pcb current_process_b;
                 current_process_b.process = process.mmsg;
                 current_process_b.state = 0;
                 current_process_b.remainingTime = process.mmsg.runningtime;
                 current_process_b.waitingTime = 0;
-                
+
                 pData[index++] = current_process_b;
-                void *newpData = (struct pcb *)realloc(pData,(index+1) * sizeof(struct pcb));
+                void *newpData = (struct pcb *)realloc(pData, (index + 1) * sizeof(struct pcb));
 
                 /*
                     int excutionTime;

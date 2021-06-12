@@ -44,8 +44,7 @@ int main(int argc, char *argv[])
 
     process_msgq_id = msgget(process_key_id, 0666 | IPC_CREAT); //create message queue and return id
 
-
-    if (process_msgq_id == -1 )
+    if (process_msgq_id == -1)
     {
         perror("Error in create");
         exit(-1);
@@ -108,13 +107,13 @@ int main(int argc, char *argv[])
 
     fclose(fp);
     // 2. Read the chosen scheduling algorithm and its parameters, if there are any from the argument list.
-    char* algoChosen ;
+    char *algoChosen;
     int quantum = -1;
-    for (int i = 2; i < argc - 1; i++)
+    for (int i = 2; i < argc; i++)
     {
         if (!strcmp(argv[i], "-sch"))
         {
-            strcpy(algoChosen ,argv[i + 1]);
+            strcpy(algoChosen, argv[i + 1]);
         }
         if (argv[i] == "-q")
         {
@@ -156,9 +155,7 @@ int main(int argc, char *argv[])
     else if (pid_scheduler == 0) // If the process is a child
     {
         // Execute the file scheduler.out
-        // char* const algo;
-
-        //     printf("FROM PROCESS GENE. 22: %s  \n",algo);
+        printf("FROM PROCESS GENE. 22: %s  \n", algoChosen);
         char *const argv_scheduler[] = {"./scheduler.out", algoChosen, NULL};
         if (execv(argv_scheduler[0], argv_scheduler) == -1)
         {
@@ -179,7 +176,6 @@ int main(int argc, char *argv[])
     {
         // To get time use this function.
         int x = getClk();
-
 
         printf("Current Time is %d\n", x);
         while (x == pData[head].arrivaltime)

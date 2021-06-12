@@ -1,5 +1,5 @@
-#include "headers.h"
 #include <string.h>
+#include "headers.h"
 
 struct processData
 {
@@ -29,9 +29,8 @@ struct msgbuff
 
 int main(int argc, char *argv[])
 {
-    char *algo;
-    strcpy(algo,argv[1]);
-    printf("ARGC: %d\tARGUMENT SENT: %s\n",argc, algo);
+    char *algo = argv[1];
+    printf("ARGC: %d\tARGUMENT SENT: %s\n", argc, algo);
 
     key_t process_key_id;
     int process_msgq_id;

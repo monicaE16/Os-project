@@ -23,6 +23,7 @@ struct msgbuff
 
 bool RearrangeByArrivalTime(struct processData *, int, int *, int);
 struct processData *pData;
+int process_msgq_id;
 
 int main(int argc, char *argv[])
 {
@@ -38,7 +39,6 @@ int main(int argc, char *argv[])
     ssize_t read;
 
     key_t process_key_id;
-    int process_msgq_id;
 
     process_key_id = ftok("keyfile", 'a'); //create unique key
 
@@ -107,8 +107,9 @@ int main(int argc, char *argv[])
 
     fclose(fp);
     // 2. Read the chosen scheduling algorithm and its parameters, if there are any from the argument list.
-    char *algoChosen;
+    char *algoChosen = (char *)malloc(100);
     int quantum = -1;
+
     for (int i = 2; i < argc; i++)
     {
         if (!strcmp(argv[i], "-sch"))
@@ -154,8 +155,9 @@ int main(int argc, char *argv[])
     }
     else if (pid_scheduler == 0) // If the process is a child
     {
+
         // Execute the file scheduler.out
-        printf("FROM PROCESS GENE. 22: %s  \n", algoChosen);
+        printf("FROM PROCESS GENE. UP 22: %s \n", algoChosen);
         char *const argv_scheduler[] = {"./scheduler.out", algoChosen, NULL};
         if (execv(argv_scheduler[0], argv_scheduler) == -1)
         {
@@ -182,10 +184,10 @@ int main(int argc, char *argv[])
         {
             printf("SENDING PROCESS %d \n", pData[head].id);
             // head = pData[head].id_next_process;
-        process.mtype = pid_scheduler;
-        process.mmsg = pData[head];
-        int send_val = msgsnd(process_msgq_id, &process, sizeof(process.mmsg), IPC_NOWAIT);
-            head ++;
+            process.mtype = pid_scheduler;
+            process.mmsg = pData[head];
+            int send_val = msgsnd(process_msgq_id, &process, sizeof(process.mmsg), IPC_NOWAIT);
+            head++;
         }
 
         while (x == getClk())
@@ -201,6 +203,7 @@ void clearResources(int signum)
 {
     //TODO Clears all resources in case of interruption
     free(pData);
+    msgctl(process_msgq_id, IPC_RMID, (struct msqid_ds *)0);
 
     exit(0);
 }

@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+/////////////////////////////////////////// INITIALIZE THE REMAINING TIME TO BE EQUAL TO THE RUNNING TIME AT THE CREATION OF THE PROCESS
+
 typedef struct processData
 {
     int arrivaltime;
@@ -21,6 +23,7 @@ typedef struct pcb
 
 } pcb;
 
+
 // this node should hold a process and its data
 typedef struct node
 {
@@ -29,52 +32,24 @@ typedef struct node
     struct node *next;
 } node;
 
-node *f = NULL;
-node *r = NULL;
-
-void enqueue(pcb d) //Insert the element and priority in Queue
+typedef struct queue
 {
-    node *temp;
-    node *new_n;
-    new_n = (node *)malloc(sizeof(node));
-    new_n->data = d;
+    node* head;
+    node* tail;
 
-    if ((f == NULL))
-    {
-        new_n->next = f;
-        f = new_n;
-    }
-    else
-    {
-        temp = f;
-        while ((temp->next != NULL) && ((temp->next->data.process.priority) <= new_n->data.process.priority))
-            temp = temp->next;
-        new_n->next = temp->next;
-        temp->next = new_n;
-    }
-}
-void print(node *head) //Print the data of Queue
+}queue;
+
+void print(queue q) //Print the data of Queue
 {
-    node *temp = head;
+
+    node *temp = q.head;
     while (temp != NULL)
     {
         printf("\nProcess Id = %d\tPriority = %d ", temp->data.process.id, temp->data.process.priority);
         temp = temp->next;
     }
 }
-void dequeue() //Deletion of highest priority element from the Queue
-{
-    node *temp;
-    if (f == NULL) //Check for Underflow condition
-        printf("\nQueue is Empty");
-    else
-    {
-        temp = f;
-        f = f->next;
-        printf("\nDeleted element:- %d\t and Its Priority:- %d", temp->data.process.id, temp->data.process.priority);
-        free(temp);
-    }
-}
+
 
 // Function to Create A New Node
 node *newNode(pcb pd)
@@ -94,30 +69,39 @@ pcb peek(node **head)
 
 // Removes the element with the
 // highest priority form the list
-void pop(node **head)
+node* dequeue(queue* q)
 {
-    node *temp = *head;
-    (*head) = (*head)->next;
-    free(temp);
+    node *temp = q->head;
+    (q->head) = (q->head)->next;
+    // free(temp);
+    return temp;
 }
 
 // Function to push according to priority
-void push(node **head, pcb pd)
+void enqueue_priority(queue* q, node* pd)
 {
-    node *start = (*head);
-
+    node *start = (q->head);
+    // node *start = (head);
     // Create new Node
-    node *temp = newNode(pd);
+    node *temp = pd;
 
+    if ((q->head == NULL))
+    {
+        temp->next = NULL;
+        // f = temp;
+        q->head = temp;
+        return;
+    }
     // Special Case: The head of list has lesser
     // priority than new node. So insert new
     // node before head node and change head node.
-    if ((*head)->data.process.priority > pd.process.priority)
+    if ((q->head)->data.process.priority > pd->data.process.priority)
     {
 
         // Insert New Node before head
-        temp->next = *head;
-        (*head) = temp;
+        temp->next = q->head;
+        // (head) = temp;
+        q->head = temp;
     }
     else
     {
@@ -125,7 +109,7 @@ void push(node **head, pcb pd)
         // Traverse the list and find a
         // position to insert new node
         while (start->next != NULL &&
-               start->next->data.process.priority < pd.process.priority)
+               start->next->data.process.priority < pd->data.process.priority)
         {
             start = start->next;
         }
@@ -137,8 +121,78 @@ void push(node **head, pcb pd)
     }
 }
 
-// Function to check is list is empty
-int isEmpty(node **head)
+///IT SHOULD BE ENQUEUED BY THE RUNNING TIME & WE SHOULD CONSIDER THAT THE REMAINNING TIME AND
+/// THE RUNNING TIME ARE THE SAME VARIABLE SO 
+// Function to push according to priority
+void enqueue_rem_time(queue* q, node* pd)
 {
-    return (*head) == NULL;
+    node *start = (q->head);
+    // node *start = (head);
+    // Create new Node
+    node *temp = pd;
+
+    if ((q->head == NULL))
+    {
+        temp->next = NULL;
+        // f = temp;
+        q->head = temp;
+        return;
+    }
+    // Special Case: The head of list has lesser
+    // priority than new node. So insert new
+    // node before head node and change head node.
+    if ((q->head)->data.remainingTime > pd->data.remainingTime)
+    {
+
+        // Insert New Node before head
+        temp->next = q->head;
+        // (head) = temp;
+        q->head = temp;
+    }
+    else
+    {
+
+        // Traverse the list and find a
+        // position to insert new node
+        while (start->next != NULL &&
+               start->next->data.remainingTime < pd->data.remainingTime)
+        {
+            start = start->next;
+        }
+
+        // Either at the ends of the list
+        // or at required position
+        temp->next = start->next;
+        start->next = temp;
+    }
+}
+
+// Function to enqueue normally
+void enqueue(queue* q, node* pd)
+{
+    node *start = (q->head);
+    // node *start = (head);
+    // Create new Node
+    node *temp = pd;
+
+    if ((q->head == NULL))
+    {
+        temp->next = NULL;
+        // f = temp;
+        q->head = temp;
+        return;
+    }
+
+    while(start->next != NULL){
+        start = start->next;
+    }
+    start->next = temp;
+    temp->next = NULL;
+    return;
+}
+
+// Function to check is list is empty
+int isEmpty(queue q)
+{
+    return (q.head) == NULL;
 }

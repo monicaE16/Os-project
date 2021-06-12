@@ -56,6 +56,7 @@ int main(int argc, char *argv[])
 
                 pData[index++] = current_process_b;
                 void *newpData = (struct pcb *)realloc(pData, (index + 1) * sizeof(struct pcb));
+                // enqueue(current_process_b);
 
                 /*
                     int excutionTime;
@@ -63,6 +64,7 @@ int main(int argc, char *argv[])
             }
         }
 
+// print()
      
 
 

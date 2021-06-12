@@ -55,11 +55,7 @@ int main(int argc, char *argv[])
                 current_process_b.waitingTime = 0;
 
                 pData[index++] = current_process_b;
-<<<<<<< HEAD
-                void *newpData = ( pcb *)realloc(pData,(index+1) * sizeof( pcb));
-=======
                 void *newpData = (struct pcb *)realloc(pData, (index + 1) * sizeof(struct pcb));
->>>>>>> main
 
                 /*
                     int excutionTime;

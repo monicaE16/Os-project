@@ -33,7 +33,7 @@ int main(int agrc, char *argv[])
     //     perror("Error in semctl");
     //     exit(-1);
     // }
-    printf("------------------------------------BEFORE INIT----------------\n");
+    // printf("------------------------------------BEFORE INIT----------------\n");
 
     //TODO The process needs to get the remaining time from somewhere
     //remainingtime = ??;
@@ -41,19 +41,19 @@ int main(int agrc, char *argv[])
     char *rmtime = malloc(sizeof(char));
     strcpy(rmtime, (char *)shmaddr);
     remainingtime = atoi(rmtime);
-    printf("------------------------------------BEFORE THE WHILE LOOP----------------\n");
+    // printf("------------------------------------BEFORE THE WHILE LOOP----------------\n");
     while (remainingtime > 0)
     {
         down(sem3);
 
         strcpy(rmtime, (char *)shmaddr);
         remainingtime = atoi(rmtime);
-        printf("\n I'M A CHILD! MY REMAINING TIME = %d\n", remainingtime);
-        sleep(1);
+        printf("\n I'M A CHILD! MY REMAINING TIME = %d %d\n", remainingtime,getpid());
+        // sleep(1);
 
         // remainingtime = ??;
     }
-
+    printf("PROC %d EXITING...\n",getpid());
     destroyClk(false);
 
     return 0;

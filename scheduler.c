@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
                         current_running_process = nn;
                         up(sem1);
                     }
-                    sheduler_logger(x,current_running_process);
+                    sheduler_logger(x, current_running_process);
                     char *number_temp = malloc(sizeof(char));
                     int remaining_time = current_running_process->data->remainingTime--;
                     printf("FROM THE PARENT: %d\n", remaining_time);
@@ -170,6 +170,58 @@ int main(int argc, char *argv[])
             }
             else if (atoi(algo) == 4)
             { //SRTN
+                if (!isEmpty(readyQueue))
+                {
+                    printf("HELLO\n");
+                    node *peeker = peek(&readyQueue);
+                    if (current_running_process == NULL)
+                    {
+                        printf("NULL curr\n");
+                        printf("SCH: PROCESS %d STARTED\n", current_running_process->data->process.id);
+                        node *n = dequeue(&readyQueue);
+                        current_running_process = n;
+                        current_running_process->data->excutionTime = currentTime;
+                        up(sem1);
+                        // sheduler_logger(x, current_running_process);
+                    }
+                    else
+                    {
+                        printf("not NULL curr\n");
+                        if (peeker->data->remainingTime < current_running_process->data->remainingTime)
+                        {
+                            kill(current_running_process->data->pid, SIGSTOP);
+                            current_running_process->data->state = 2;
+                            // sheduler_logger(x, current_running_process);
+
+                            printf("SCH: PROCESS %d STOPPED\n", current_running_process->data->process.id);
+
+                            peeker = dequeue(&readyQueue);
+                            enqueue_rem_time(&readyQueue, current_running_process);
+                            current_running_process = peeker;
+                            if (current_running_process->data->state == 2)
+                            {
+                                printf("SCH: PROCESS %d RESUMED\n", current_running_process->data->process.id);
+                                kill(current_running_process->data->pid, SIGCONT);
+                                current_running_process->data->state = 1;
+                            }
+                            else {
+                                printf("SCH: PROCESS %d STARTED\n", current_running_process->data->process.id);
+                            }
+                            // sheduler_logger(x, current_running_process);
+                        }
+                    }
+                    printf("Decrementing process remaining time\n");
+                    char *remainingStr = malloc(sizeof(char));
+                    current_running_process->data->remainingTime--;
+                    sprintf(remainingStr, "%d", current_running_process->data->remainingTime);
+                    strcpy((char *)shmaddr, remainingStr);
+                    if (current_running_process->data->remainingTime == 0)
+                    {
+                        // sheduler_logger(x + 1, current_running_process);
+                        current_running_process = NULL;
+                    }
+                    up(sem3);
+                }
             }
         }
     }
@@ -211,8 +263,8 @@ void sheduler_logger(int currentTime, node *n)
     else
     {
         int TA = currentTime - nPD->arrivaltime;
-        int WTA = TA/nPD->runningtime;
-        fprintf(fp_log, "#At\ttime\t%d\tprocess\t%d\t%s\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\tTA %d\tWTA %d\n", currentTime, nPD->id, nState, nPD->arrivaltime, nPD->runningtime, nPCB->remainingTime, nPCB->waitingTime,TA,WTA);
+        int WTA = TA / nPD->runningtime;
+        fprintf(fp_log, "#At\ttime\t%d\tprocess\t%d\t%s\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\tTA %d\tWTA %d\n", currentTime, nPD->id, nState, nPD->arrivaltime, nPD->runningtime, nPCB->remainingTime, nPCB->waitingTime, TA, WTA);
     }
     free(nState);
 }

@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
         perror("Error in semctl");
         exit(-1);
     }
-    semun.val = 1;
+    //semun.val = 1;
 
     if (semctl(sem2, 0, SETVAL, semun) == -1)
     {
@@ -143,26 +143,33 @@ int main(int argc, char *argv[])
             currentTime = x;
             if (atoi(algo) == 1)
             { /// FCFS
-                if (!isEmpty(readyQueue) || current_running_process != NULL)
+               if (!isEmpty(readyQueue) || current_running_process != NULL)
                 {
                     if (current_running_process == NULL)
                     {
-                        down(sem2);
                         node *nn = dequeue(&readyQueue);
                         current_running_process = nn;
-                        up(sem1);
-                    }
-                    char *number_temp = malloc(sizeof(char));
-                    int remaining_time = current_running_process->data->remainingTime--;
+                        char *number_temp = malloc(sizeof(char));
+                    int remaining_time = current_running_process->data->remainingTime;
                     printf("FROM THE PARENT: %d\n", remaining_time);
                     sprintf(number_temp, "%d", remaining_time);
                     strcpy((char *)shmaddr, number_temp);
+                        up(sem1);
+                    }
+
+                    char *number_temp = malloc(sizeof(char));
+                    int remaining_time = current_running_process->data->remainingTime;
+                    printf("FROM THE PARENT: %d\n", remaining_time);
+                    sprintf(number_temp, "%d", remaining_time);
+                    strcpy((char *)shmaddr, number_temp);
+                    up(sem3);
+                    down(sem2);
+                    strcpy(number_temp, (char *)shmaddr);
+                    current_running_process->data->remainingTime = atoi(number_temp);
                     if (current_running_process->data->remainingTime <= 0)
                     {
                         current_running_process = NULL;
-                        up(sem2);
                     }
-                    up(sem3);
                 }
             }
             else if (atoi(algo) == 2)
@@ -186,18 +193,7 @@ int main(int argc, char *argv[])
     semctl(sem1, 0, IPC_RMID, semun);
 }
 
-void HighestPriorityFirst(queue* readyQueue,node* currentNode,int currentClk,FILE* fp_log)
-{
 
-    // I need to create a priority queue first
-
-
-
-
-
-
-
-}
 
 void clearResources(int signum)
 {

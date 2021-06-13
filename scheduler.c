@@ -37,6 +37,16 @@ int main(int argc, char *argv[])
     sem2 = semget(sem2_id, 1, 0666 | IPC_CREAT);
     sem3 = semget(sem3_id, 1, 0666 | IPC_CREAT);
 
+
+//open files
+//FILE *fp_log = fopen("./scheduler.log", "w");
+//fprintf(fp_log,"#At time x process y state arr w total z remain y wait k\n");
+
+
+
+
+
+
     if (process_msgq_id == -1 || shm_id_one == -1 || sem1 == -1 || sem2 == -1 || sem3 == -1)
     {
         perror("Error in create");
@@ -176,10 +186,17 @@ int main(int argc, char *argv[])
     semctl(sem1, 0, IPC_RMID, semun);
 }
 
-void HighestPriorityFirst()
+void HighestPriorityFirst(queue* readyQueue,node* currentNode,int currentClk,FILE* fp_log)
 {
 
     // I need to create a priority queue first
+
+
+
+
+
+
+
 }
 
 void clearResources(int signum)

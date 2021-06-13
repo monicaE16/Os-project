@@ -10,9 +10,11 @@ struct msgbuff
 };
 
 void clearResources(int signum);
+void sheduler_logger(int currentTime, node *n);
 
 union Semun semun;
 int sem1, sem2, sem3, shm_id_one;
+FILE *fp_log;
 
 int main(int argc, char *argv[])
 {
@@ -37,15 +39,9 @@ int main(int argc, char *argv[])
     sem2 = semget(sem2_id, 1, 0666 | IPC_CREAT);
     sem3 = semget(sem3_id, 1, 0666 | IPC_CREAT);
 
-
-//open files
-//FILE *fp_log = fopen("./scheduler.log", "w");
-//fprintf(fp_log,"#At time x process y state arr w total z remain y wait k\n");
-
-
-
-
-
+    //open files
+    fp_log = fopen("./scheduler.log", "w");
+    fprintf(fp_log, "#At\ttime\tx\tprocess\ty\tstate\tarr\tw\ttotal\tz\tremain\ty\twait\tk\n");
 
     if (process_msgq_id == -1 || shm_id_one == -1 || sem1 == -1 || sem2 == -1 || sem3 == -1)
     {
@@ -156,7 +152,6 @@ int main(int argc, char *argv[])
                     strcpy((char *)shmaddr, number_temp);
                         up(sem1);
                     }
-
                     char *number_temp = malloc(sizeof(char));
                     int remaining_time = current_running_process->data->remainingTime;
                     printf("FROM THE PARENT: %d\n", remaining_time);
@@ -191,9 +186,47 @@ int main(int argc, char *argv[])
     semctl(sem2, 0, IPC_RMID, semun);
     semctl(sem3, 0, IPC_RMID, semun);
     semctl(sem1, 0, IPC_RMID, semun);
+    fclose(fp_log);
 }
 
+void sheduler_logger(int currentTime, node *n)
+{
+    pcb *nPCB = n->data;
+    processData *nPD = &n->data->process;
+    char *nState = (char *)malloc(20);
+    //nPCB->state
+    switch (nPCB->state)
+    {
+    case 0:
+        strcpy(nState, "started");
+        break;
+    case 1:
+        strcpy(nState, "resumed");
+        break;
+    case 2:
+        strcpy(nState, "stopped");
+        break;
+    case 3:
+        strcpy(nState, "finished");
+        break;
+    }
 
+    if (nPCB->state != 3)
+        fprintf(fp_log, "#At\ttime\t%d\tprocess\t%d\t%s\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n", currentTime, nPD->id, nState, nPD->arrivaltime, nPD->runningtime, nPCB->remainingTime, nPCB->waitingTime);
+    else
+    {
+        int TA = currentTime - nPD->arrivaltime;
+        int WTA = TA/nPD->runningtime;
+        fprintf(fp_log, "#At\ttime\t%d\tprocess\t%d\t%s\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\tTA %d\tWTA %d\n", currentTime, nPD->id, nState, nPD->arrivaltime, nPD->runningtime, nPCB->remainingTime, nPCB->waitingTime,TA,WTA);
+    }
+    free(nState);
+}
+
+void HighestPriorityFirst(queue *readyQueue, node *currentNode, int currentClk, FILE *fp_log)
+{
+
+    // I need to create a priority queue first
+}
 
 void clearResources(int signum)
 {
@@ -203,6 +236,6 @@ void clearResources(int signum)
     semctl(sem3, 0, IPC_RMID, semun);
     semctl(sem1, 0, IPC_RMID, semun);
     shmctl(shm_id_one, IPC_RMID, (struct shmid_ds *)0);
-
+    fclose(fp_log);
     exit(0);
 }

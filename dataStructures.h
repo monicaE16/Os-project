@@ -26,7 +26,7 @@ typedef struct pcb
     int excutionTime;
     int remainingTime;
     int waitingTime;
-
+    int pid;
 } pcb;
 
 // this node should hold a process and its data
@@ -100,6 +100,17 @@ void print(queue *q) //Print the data of Queue
     }
 }
 
+void printList(queue *q)
+{
+    node *current = q->head;
+    while (current != NULL)
+    {
+        printf("[%d,%d] -> ",current->data->process.id,current->data->state);
+        current = current->next;
+    }
+    printf("NULL\n");
+}
+
 // Function to Create A New Node
 node *newNode(pcb *pd)
 {
@@ -111,10 +122,10 @@ node *newNode(pcb *pd)
 }
 
 // // Return the value at head
-// pcb peek(node **head)
-// {
-//     return (*head)->data;
-// }
+node* peek(queue *q)
+{
+    return q->head;
+}
 
 // Removes the element with the
 // highest priority form the list
@@ -190,7 +201,7 @@ void enqueue_rem_time(queue *q, node *pd)
     // Special Case: The head of list has lesser
     // priority than new node. So insert new
     // node before head node and change head node.
-    if ((q->head)->data->remainingTime > pd->data->remainingTime)
+    if ((q->head->data->state == 3 || ((q->head)->data->remainingTime > pd->data->remainingTime)) && pd->data->state != 3)
     {
 
         // Insert New Node before head
@@ -203,8 +214,7 @@ void enqueue_rem_time(queue *q, node *pd)
 
         // Traverse the list and find a
         // position to insert new node
-        while (start->next != NULL &&
-               start->next->data->remainingTime < pd->data->remainingTime)
+        while (start->next != NULL && ((start->next->data->remainingTime < pd->data->remainingTime) || pd->data->state == 3))
         {
             start = start->next;
         }
@@ -268,7 +278,7 @@ void insertQueue(queue *readyQueue, pcb *current_process_b, char *algo)
     { //SRTN
         enqueue_rem_time(readyQueue, current_process_node);
     }
-    print(readyQueue);
+    // print(readyQueue);
     //    else if(atoi(algo) == 5){//RR
     //    enqueue(&readyQueue, current_process_node);
     //    }

@@ -24,6 +24,7 @@ struct msgbuff
 bool RearrangeByArrivalTime(struct processData *, int, int *, int);
 struct processData *pData;
 int process_msgq_id;
+int pid_scheduler;
 
 int main(int argc, char *argv[])
 {
@@ -50,7 +51,7 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
-    int pid_clk, pid_scheduler;
+    int pid_clk;
     if (fp == NULL)
     {
         printf("Unable to open the file ... ");
@@ -78,7 +79,7 @@ int main(int argc, char *argv[])
 
     while ((read = getline(&line, &len, fp)) != -1)
     {
-        printf("Retrieved line of length %zu:\n", read);
+        printf("GEN: Retrieved line of length %zu:\n", read);
         if (line[0] != '#')
         {
             // Translate each line in the file into process parameter
@@ -157,7 +158,7 @@ int main(int argc, char *argv[])
     {
 
         // Execute the file scheduler.out
-        printf("FROM PROCESS GENE. UP 22: %s \n", algoChosen);
+        printf("GEN: ALGO: %s \n", algoChosen);
         char *const argv_scheduler[] = {"./scheduler.out", algoChosen, NULL};
         if (execv(argv_scheduler[0], argv_scheduler) == -1)
         {
@@ -179,10 +180,10 @@ int main(int argc, char *argv[])
         // To get time use this function.
         int x = getClk();
 
-        printf("Current Time FROM PROCC GEN is %d\n", x);
+        // printf("GEN: CurrTime: %d\n", x);
         while (x == pData[head].arrivaltime)
         {
-            printf("SENDING PROCESS %d \n", pData[head].id);
+            // printf("GEN: SENDING PROCESS %d \n", pData[head].id);
             // head = pData[head].id_next_process;
             process.mtype = pid_scheduler;
             process.mmsg = pData[head];
@@ -202,9 +203,10 @@ int main(int argc, char *argv[])
 void clearResources(int signum)
 {
     //TODO Clears all resources in case of interruption
+    printf("Clearing Resources in Process Generator...\n");
     free(pData);
     msgctl(process_msgq_id, IPC_RMID, (struct msqid_ds *)0);
-
+    kill(pid_scheduler,SIGINT);
     exit(0);
 }
 

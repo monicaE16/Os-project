@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
         // To get time use this function.
         int x = getClk();
 
-        printf("Current Time is %d\n", x);
+        printf("Current Time FROM PROCC GEN is %d\n", x);
         while (x == pData[head].arrivaltime)
         {
             printf("SENDING PROCESS %d \n", pData[head].id);

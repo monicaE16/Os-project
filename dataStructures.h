@@ -22,8 +22,9 @@ typedef struct processData
 typedef struct pcb
 {
     struct processData process;
-    int state; // 0 = started, 1 = resumed, 2 = stopped, 3 = finished.
-    int excutionTime;
+    int state;     // 0 = started, 1 = resumed, 2 = stopped, 3 = finished.
+    int startTime; //should be set at to the current timestep when it is dequeued and its state is start 
+
     int remainingTime;
     int waitingTime;
     int pid;

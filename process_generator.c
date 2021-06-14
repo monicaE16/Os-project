@@ -249,7 +249,7 @@ while ((currentCharacter = fgetc(fp)) != EOF)
         }
     }
 
-totalLinesCount++;
+//totalLinesCount++;
 printf("-------------NO of lines in file %d ------------------ \n",totalLinesCount);
 fclose(fp);
 return totalLinesCount;

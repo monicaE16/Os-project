@@ -83,6 +83,8 @@ int main(int argc, char *argv[])
 
     // Creating a dynamic array of size of lines read from the file
     pData = (processData *)malloc(len * sizeof(processData));
+    
+
     int index = 0;
     // int head = 0;
     // int tail = -1;
@@ -95,16 +97,15 @@ int main(int argc, char *argv[])
             // Translate each line in the file into process parameter
             // Then add this process to the processes array
             processData current_process;
-            int id, arrival_time, runtime, priority;
+            int id, arrival_time, runtime, priority, memSize;
 
             printf("%s", line);
-            sscanf(line, "%d\t%d\t%d\t%d", &id, &arrival_time, &runtime, &priority);
+            sscanf(line, "%d\t%d\t%d\t%d\t%d", &id, &arrival_time, &runtime, &priority, &memSize);
             current_process.id = id - 1;
             current_process.arrivaltime = arrival_time;
             current_process.runningtime = runtime;
             current_process.priority = priority;
-            // current_process.id_next_process = -1;
-            // current_process.id_prev_process = tail;
+            current_process.memorysize = memSize;
             pData[index++] = current_process;
 
             // Rearrange the array by the arrival time of the processes

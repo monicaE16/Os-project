@@ -8,12 +8,14 @@
 typedef short bool;
 #define true 1
 #define false 0
+#define totalMemSize 1024
 
 typedef struct processData
 {
     int arrivaltime;
     int priority;
     int runningtime;
+    int memorysize;
     int id;
 } processData;
 
@@ -103,7 +105,7 @@ void printList(queue *q)
     node *current = q->head;
     while (current != NULL)
     {
-        printf("[%d,%d] -> ",current->data->process.id,current->data->state);
+        printf("[%d,%d] -> ", current->data->process.id, current->data->state);
         current = current->next;
     }
     printf("NULL\n");
@@ -120,7 +122,7 @@ node *newNode(pcb *pd)
 }
 
 // // Return the value at head
-node* peek(queue *q)
+node *peek(queue *q)
 {
     return q->head;
 }
@@ -254,7 +256,39 @@ bool isEmpty(queue q)
 {
     return (q.head) == NULL;
 }
-void insertQueue(queue *readyQueue, pcb *current_process_b, char *algo, char* quantum)
+
+bool checkAvailableMem(pcb *current_process, char *memAlgo, void *memory)
+{
+    bool checker = false;
+    if (atoi(memAlgo) == 1)
+    { //First Fit
+    }
+    else if (atoi(memAlgo) == 2)
+    { // Next Fit
+    }
+    else if (atoi(memAlgo) == 3)
+    { // Best Fit
+    }
+    else if (atoi(memAlgo) == 4)
+    {// Buddy System allocation
+    }
+
+    return checker;
+}
+
+
+// NSHOOF EL WAITING QUEUE
+void deallocate(int processID, char *memAlgo, void *memory ){
+    if (atoi(memAlgo) == 4)
+    {// Buddy System allocation
+
+    }
+    else{
+
+    }
+}
+
+void insertQueue(queue *readyQueue, pcb *current_process_b, char *algo, char *quantum)
 {
 
     node *current_process_node = newNode(current_process_b);
@@ -277,9 +311,10 @@ void insertQueue(queue *readyQueue, pcb *current_process_b, char *algo, char* qu
         enqueue_rem_time(readyQueue, current_process_node);
     }
     // print(readyQueue);
-       else if(atoi(algo) == 5){//RR
-       enqueue(readyQueue, current_process_node);
-       }
+    else if (atoi(algo) == 5)
+    { //RR
+        enqueue(readyQueue, current_process_node);
+    }
 }
 
 // void FCFS(queue *readyQueue, pcb *current_running_process, int* sem1, int* sem2, int* sem3)

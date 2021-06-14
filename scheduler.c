@@ -17,8 +17,16 @@ union Semun semun;
 int sem1, sem2, sem3, sem4, shm_id_one;
 node *current_running_process;
 FILE *fp_log;
+FILE *fp_PERF;
 int No_proc = 0;    //real no. of processes in text file
 int counter_proc=0; // count of finish processes
+
+int last_clk=0;
+int totalWait=0;
+float totalWTA=0.0;
+int totalExectution=0;
+
+
 int main(int argc, char *argv[])
 {
     signal(SIGINT, clearResources);
@@ -542,22 +550,41 @@ void sheduler_logger(int currentTime, node *n)
     }
 
     if (nPCB->state != 3)
-        fprintf(fp_log, "#At\ttime\t%d\tprocess\t%d\t%s\t\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n", currentTime, nPD->id + 1, nState, nPD->arrivaltime, nPD->runningtime, nPCB->remainingTime, nPCB->waitingTime);
+        fprintf(fp_log, "At\ttime\t%d\tprocess\t%d\t%s\t\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n", currentTime, nPD->id + 1, nState, nPD->arrivaltime, nPD->runningtime, nPCB->remainingTime, nPCB->waitingTime);
     else
     {
         int TA = currentTime - nPD->arrivaltime;
         float WTA = (float)TA / ((float)nPD->runningtime);
-
-
+        totalWait+=nPCB->waitingTime;
+        totalWTA+=WTA;
+        last_clk=currentTime-1;
+        totalExectution+=nPD->runningtime;
         counter_proc++;
         // printf("TA: %d\tRunTime: %.2f\n", TA, nPD->runningtime);
-        fprintf(fp_log, "#At\ttime\t%d\tprocess\t%d\t%s\t\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\tTA %d\tWTA %9.2f\n", currentTime, nPD->id + 1, nState, nPD->arrivaltime, nPD->runningtime, nPCB->remainingTime, nPCB->waitingTime, TA, WTA);
+        fprintf(fp_log, "At\ttime\t%d\tprocess\t%d\t%s\t\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\tTA %d\tWTA %9.2f\n", currentTime, nPD->id + 1, nState, nPD->arrivaltime, nPD->runningtime, nPCB->remainingTime, nPCB->waitingTime, TA, WTA);
     }
     free(nState);
 
-if(counter_proc==No_proc)
+if(counter_proc==No_proc) 
 {
     printf("\n we have finished the processes \n");
+    //writing in scheduler.perf
+
+       float avg_waiting = (float)totalWait /((float)No_proc);
+       float avg_WTA = (float)totalWTA /((float)No_proc);
+       float cpu_util=(float)totalExectution /((float)last_clk);
+
+        fp_PERF = fopen("./scheduler.perf", "w");
+        fprintf(fp_PERF, "CPU utilization %.2f %% \n",cpu_util*100.00);
+
+        fprintf(fp_PERF, "Avg WTA = %.2f  \n", avg_WTA);
+        fprintf(fp_PERF, "Avg Waiting = %.2f  \n", avg_waiting);
+
+        fclose(fp_PERF);
+
+
+
+
 
 
 

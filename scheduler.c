@@ -71,11 +71,11 @@ int main(int argc, char *argv[])
         perror("Error in semctl");
         exit(-1);
     }
-    if (semctl(sem3, 0, SETVAL, semun) == -1)
-    {
-        perror("Error in semctl");
-        exit(-1);
-    }
+    // if (semctl(sem3, 0, SETVAL, semun) == -1)
+    // {
+    //     perror("Error in semctl");
+    //     exit(-1);
+    // }
     // semun.val = 1;
 
     if (semctl(sem2, 0, SETVAL, semun) == -1)
@@ -109,10 +109,12 @@ int main(int argc, char *argv[])
     while (1)
     {
         // To get time use this function.
+        down(sem3);
         int x = getClk();
 
         int rec_val = 0;
         // To check if more than 1 process arrived at the same time step
+            // down(sem3);
         while (rec_val != -1)
         {
 

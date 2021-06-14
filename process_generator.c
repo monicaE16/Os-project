@@ -1,28 +1,29 @@
 #include <unistd.h>
 #include <string.h>
 #include "headers.h"
+#include "dataStructures.h"
 
 void clearResources(int);
 
-struct processData
-{
-    int arrivaltime;
-    int priority;
-    int runningtime;
-    int id;
-    // int id_next_process;
-    // int id_prev_process;
-};
+// struct processData
+// {
+//     int arrivaltime;
+//     int priority;
+//     int runningtime;
+//     int id;
+//     // int id_next_process;
+//     // int id_prev_process;
+// };
 
 struct msgbuff
 {
     long mtype;
     // char mtext[256];
-    struct processData mmsg;
+    processData mmsg;
 };
 
-bool RearrangeByArrivalTime(struct processData *, int, int *, int);
-struct processData *pData;
+bool RearrangeByArrivalTime(processData *, int, int *, int);
+processData *pData;
 int process_msgq_id;
 int pid_scheduler;
 
@@ -40,10 +41,12 @@ int main(int argc, char *argv[])
     ssize_t read;
 
     key_t process_key_id;
+    key_t sem3_id = ftok("keyfile", 'd');
 
     process_key_id = ftok("keyfile", 'a'); //create unique key
 
     process_msgq_id = msgget(process_key_id, 0666 | IPC_CREAT); //create message queue and return id
+    int sem3 = semget(sem3_id, 1, 0666 | IPC_CREAT);
 
     if (process_msgq_id == -1)
     {
@@ -57,6 +60,13 @@ int main(int argc, char *argv[])
         printf("Unable to open the file ... ");
         return -1;
     }
+    union Semun semun;
+    semun.val = 0; /* initial value of the semaphore, Binary semaphore */
+    if (semctl(sem3, 0, SETVAL, semun) == -1)
+    {
+        perror("Error in semctl");
+        exit(-1);
+    }
 
     // Count the number of lines in the file
     int count = 0;
@@ -69,10 +79,10 @@ int main(int argc, char *argv[])
     }
 
     fclose(fp);
-    fp = fopen("./processes.txt", "r");
+    fp = fopen(argv[1], "r");
 
     // Creating a dynamic array of size of lines read from the file
-    pData = (struct processData *)malloc(len * sizeof(struct processData));
+    pData = (processData *)malloc(len * sizeof(processData));
     int index = 0;
     // int head = 0;
     // int tail = -1;
@@ -84,7 +94,7 @@ int main(int argc, char *argv[])
         {
             // Translate each line in the file into process parameter
             // Then add this process to the processes array
-            struct processData current_process;
+            processData current_process;
             int id, arrival_time, runtime, priority;
 
             printf("%s", line);
@@ -186,7 +196,7 @@ int main(int argc, char *argv[])
         // To get time use this function.
         int x = getClk();
 
-        // printf("GEN: CurrTime: %d\n", x);
+        printf("GEN: CurrTime: %d\n", x);
         while (x == pData[head].arrivaltime)
         {
             // printf("GEN: SENDING PROCESS %d \n", pData[head].id);
@@ -195,7 +205,10 @@ int main(int argc, char *argv[])
             process.mmsg = pData[head];
             int send_val = msgsnd(process_msgq_id, &process, sizeof(process.mmsg), IPC_NOWAIT);
             head++;
+            // up(sem3);
         }
+        printf("ANA ABL EL SEM");
+        up(sem3);
 
         while (x == getClk())
         {

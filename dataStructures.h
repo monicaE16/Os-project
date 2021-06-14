@@ -15,16 +15,13 @@ typedef struct processData
     int priority;
     int runningtime;
     int id;
-    // int id_next_process;
-    // int id_prev_process;
 } processData;
 
 typedef struct pcb
 {
     struct processData process;
-    int state;     // 0 = started, 1 = resumed, 2 = stopped, 3 = finished.
-    int startTime; //should be set at to the current timestep when it is dequeued and its state is start 
-
+    int state; // 0 = started, 1 = resumed, 2 = stopped, 3 = finished.
+    int startTime;
     int remainingTime;
     int waitingTime;
     int pid;
@@ -257,7 +254,7 @@ bool isEmpty(queue q)
 {
     return (q.head) == NULL;
 }
-void insertQueue(queue *readyQueue, pcb *current_process_b, char *algo)
+void insertQueue(queue *readyQueue, pcb *current_process_b, char *algo, char* quantum)
 {
 
     node *current_process_node = newNode(current_process_b);
@@ -280,9 +277,9 @@ void insertQueue(queue *readyQueue, pcb *current_process_b, char *algo)
         enqueue_rem_time(readyQueue, current_process_node);
     }
     // print(readyQueue);
-    //    else if(atoi(algo) == 5){//RR
-    //    enqueue(&readyQueue, current_process_node);
-    //    }
+       else if(atoi(algo) == 5){//RR
+       enqueue(readyQueue, current_process_node);
+       }
 }
 
 // void FCFS(queue *readyQueue, pcb *current_running_process, int* sem1, int* sem2, int* sem3)

@@ -109,7 +109,9 @@ int main(int argc, char *argv[])
     fclose(fp);
     // 2. Read the chosen scheduling algorithm and its parameters, if there are any from the argument list.
     char *algoChosen = (char *)malloc(100);
-    int quantum = -1;
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    char *quantum = (char *)malloc(100);
+    // int quantum = -1;
 
     for (int i = 2; i < argc; i++)
     {
@@ -117,10 +119,14 @@ int main(int argc, char *argv[])
         {
             strcpy(algoChosen, argv[i + 1]);
         }
-        if (argv[i] == "-q")
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        if ( !strcmp(argv[i], "-q") )
         {
-            quantum = atoi(argv[i + 1]);
+            printf("HELLOOOOOOOOOOOOOOOOOOO %s\n", argv[i+1]);
+            strcpy(quantum, argv[i + 1]);
+            // quantum = atoi(argv[i + 1]);
         }
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     }
     // if (algoChosen < 0 || algoChosen >5)
     // {
@@ -159,7 +165,7 @@ int main(int argc, char *argv[])
 
         // Execute the file scheduler.out
         printf("GEN: ALGO: %s \n", algoChosen);
-        char *const argv_scheduler[] = {"./scheduler.out", algoChosen, NULL};
+        char *const argv_scheduler[] = {"./scheduler.out", algoChosen,quantum, NULL};
         if (execv(argv_scheduler[0], argv_scheduler) == -1)
         {
             printf("error in executing the file");

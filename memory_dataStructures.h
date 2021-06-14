@@ -344,8 +344,10 @@ void adjustMergeBSA(linkedList *list)
             prev->level--;
             prev->next = toRemove->next;
             memNode *adjuster = prev->next;
-            int adjustCount = prev->myCount;
-            while (adjuster != NULL)
+            int adjustCount;
+            if (adjuster != NULL && !adjuster->isFree)
+                adjustCount = prev->myCount;
+            while (adjuster != NULL && !adjuster->isFree)
             {
                 adjustCount++;
                 adjuster->myCount = adjustCount;
@@ -353,7 +355,11 @@ void adjustMergeBSA(linkedList *list)
             }
             prev = list->head;
             current = list->head->next;
+            continue;
         }
+        prev = current->next;
+        if (prev != NULL)
+            current = prev->next;
     }
 
     current = list->head;
@@ -373,22 +379,24 @@ void deallocateBSA(linkedList *list, int processID)
     if (list->head->isFree && list->head->next == NULL)
         return;
 
-    if (list->head->data->pid == processID)
+    if (!list->head->isFree && list->head->data->pid == processID)
     {
         pcb *p = list->head->data;
         list->head->isFree = true;
+        list->head->data = NULL;
         if (list->head->next != NULL && list->head->next->isFree)
         {
             memNode *afterHead = list->head->next;
             list->head->next = afterHead->next;
             list->head->level--;
             list->head->size *= 2;
+            adjustMergeBSA(list);
             // free(afterHead);
         }
         // free(p);
         return;
     }
-
+    
     memNode *prev = list->head;
     memNode *current = list->head->next;
     bool found = false;
@@ -419,8 +427,10 @@ void deallocateBSA(linkedList *list, int processID)
                 current->level--;
                 current->next = toRemove->next;
                 memNode *adjuster = current->next;
-                int adjustCount = current->myCount;
-                while (adjuster != NULL)
+                int adjustCount;
+                if (adjuster != NULL && !adjuster->isFree)
+                    adjustCount = current->myCount;
+                while (adjuster != NULL && !adjuster->isFree)
                 {
                     adjustCount++;
                     adjuster->myCount = adjustCount;
@@ -439,8 +449,10 @@ void deallocateBSA(linkedList *list, int processID)
                 prev->level--;
                 prev->next = toRemove->next;
                 memNode *adjuster = prev->next;
-                int adjustCount = prev->myCount;
-                while (adjuster != NULL)
+                int adjustCount;
+                if (adjuster != NULL && !adjuster->isFree)
+                    adjustCount = prev->myCount;
+                while (adjuster != NULL && !adjuster->isFree)
                 {
                     adjustCount++;
                     adjuster->myCount = adjustCount;

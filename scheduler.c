@@ -17,7 +17,8 @@ union Semun semun;
 int sem1, sem2, sem3, sem4, shm_id_one;
 node *current_running_process;
 FILE *fp_log;
-
+int No_proc = 0;    //real no. of processes in text file
+int counter_proc=0; // count of finish processes
 int main(int argc, char *argv[])
 {
     signal(SIGINT, clearResources);
@@ -134,7 +135,11 @@ int main(int argc, char *argv[])
                 current_process_b->state = 0;
                 current_process_b->remainingTime = process.mmsg.runningtime;
                 current_process_b->waitingTime = 0;
-
+                if (No_proc == 0) //getting number of processes for one time only
+                {
+                    No_proc = current_process_b->process.global_N;
+                    printf("******** NO of processes %d in line 140 ******** \n",No_proc);
+                }
                 // Forking a new process
                 int pid_process = fork();
                 if (pid_process == -1)
@@ -542,14 +547,24 @@ void sheduler_logger(int currentTime, node *n)
     {
         int TA = currentTime - nPD->arrivaltime;
         float WTA = (float)TA / ((float)nPD->runningtime);
+
+
+        counter_proc++;
         // printf("TA: %d\tRunTime: %.2f\n", TA, nPD->runningtime);
         fprintf(fp_log, "#At\ttime\t%d\tprocess\t%d\t%s\t\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\tTA %d\tWTA %9.2f\n", currentTime, nPD->id + 1, nState, nPD->arrivaltime, nPD->runningtime, nPCB->remainingTime, nPCB->waitingTime, TA, WTA);
     }
     free(nState);
+
+if(counter_proc==No_proc)
+{
+    printf("\n we have finished the processes \n");
+
+
+
+   kill(getppid(), SIGINT);
 }
 
-// void handler(int signum)
-// {
-//     current_running_process = NULL;
-//     signal(SIGUSR1, handler);
-// }
+
+
+}
+

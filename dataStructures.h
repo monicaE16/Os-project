@@ -15,6 +15,7 @@ typedef struct processData
     int priority;
     int runningtime;
     int id;
+    int global_N;
 } processData;
 
 typedef struct pcb

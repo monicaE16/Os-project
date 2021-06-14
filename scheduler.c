@@ -106,6 +106,7 @@ int main(int argc, char *argv[])
         perror("Not enough arguments !");
     }
     int local_quantum = q;
+    bool quantumFinished = false;
     while (1)
     {
         // To get time use this function.
@@ -399,6 +400,14 @@ int main(int argc, char *argv[])
             {
                 if (!isEmpty(readyQueue) || current_running_process != NULL)
                 {
+                    if (quantumFinished)
+                    {
+                        quantumFinished = false;
+                        current_running_process->data->state = 2;
+                        sheduler_logger(x, current_running_process);
+                        enqueue(&readyQueue, current_running_process);
+                        current_running_process = NULL;
+                    }
                     if (current_running_process == NULL)
                     {
                         local_quantum = q;
@@ -429,9 +438,9 @@ int main(int argc, char *argv[])
                     strcpy(number_temp, (char *)shmaddr);
                     current_running_process->data->remainingTime = atoi(number_temp);
                     local_quantum--;
-                    if (!isEmpty(readyQueue))
+                    if (local_quantum <= 0 || current_running_process->data->remainingTime <= 0)
                     {
-                        if (local_quantum <= 0 || current_running_process->data->remainingTime <= 0)
+                        if (!isEmpty(readyQueue))
                         {
                             printList(&readyQueue);
                             if (current_running_process->data->remainingTime <= 0)
@@ -443,24 +452,30 @@ int main(int argc, char *argv[])
                             else
                             {
                                 // printList(&readyQueue);
-
-                                enqueue(&readyQueue, current_running_process);
+                                quantumFinished = true;
+                                // enqueue(&readyQueue, current_running_process);
 
                                 current_running_process->data->state = 2;
-                                sheduler_logger(x, current_running_process);
                                 kill(current_running_process->data->pid, SIGSTOP);
 
-                                current_running_process = NULL;
+                                // current_running_process = NULL;
                             }
                         }
-                    }
-                    else
-                    {
-                        if (current_running_process->data->remainingTime <= 0)
+                        else
                         {
-                            current_running_process->data->state = 3;
-                            sheduler_logger(x + 1, current_running_process);
-                            current_running_process = NULL;
+
+                            local_quantum = q;
+                            if (current_running_process->data->remainingTime <= 0)
+                            {
+                                current_running_process->data->state = 3;
+                                sheduler_logger(x + 1, current_running_process);
+                                current_running_process = NULL;
+                            }
+                            else
+                            {
+                                quantumFinished = true;
+                                kill(current_running_process->data->pid, SIGSTOP);
+                            }
                         }
                     }
                 }
@@ -528,7 +543,7 @@ void sheduler_logger(int currentTime, node *n)
         int TA = currentTime - nPD->arrivaltime;
         float WTA = (float)TA / ((float)nPD->runningtime);
         // printf("TA: %d\tRunTime: %.2f\n", TA, nPD->runningtime);
-        fprintf(fp_log, "#At\ttime\t%d\tprocess\t%d\t%s\t\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\tTA %d\tWTA %f\n", currentTime, nPD->id + 1, nState, nPD->arrivaltime, nPD->runningtime, nPCB->remainingTime, nPCB->waitingTime, TA, WTA);
+        fprintf(fp_log, "#At\ttime\t%d\tprocess\t%d\t%s\t\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\tTA %d\tWTA %9.2f\n", currentTime, nPD->id + 1, nState, nPD->arrivaltime, nPD->runningtime, nPCB->remainingTime, nPCB->waitingTime, TA, WTA);
     }
     free(nState);
 }

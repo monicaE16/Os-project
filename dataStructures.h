@@ -212,7 +212,7 @@ void enqueue_rem_time(queue *q, node *pd)
 
         // Traverse the list and find a
         // position to insert new node
-        while (start->next != NULL && ((start->next->data->remainingTime < pd->data->remainingTime) || pd->data->state == 3))
+        while (start->next != NULL && ((start->next->data->remainingTime <= pd->data->remainingTime) || pd->data->state == 3))
         {
             start = start->next;
         }

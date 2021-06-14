@@ -46,6 +46,10 @@ int main(int agrc, char *argv[])
     remainingtime = atoi(rmtime);
     
     // printf("------------------------------------BEFORE THE WHILE LOOP----------------\n");
+    if (remainingtime <=0){
+        up(sem2);
+        
+    }
     while (remainingtime > 0)
     {
         

@@ -257,37 +257,6 @@ bool isEmpty(queue q)
     return (q.head) == NULL;
 }
 
-bool checkAvailableMem(pcb *current_process, char *memAlgo, void *memory)
-{
-    bool checker = false;
-    if (atoi(memAlgo) == 1)
-    { //First Fit
-    }
-    else if (atoi(memAlgo) == 2)
-    { // Next Fit
-    }
-    else if (atoi(memAlgo) == 3)
-    { // Best Fit
-    }
-    else if (atoi(memAlgo) == 4)
-    {// Buddy System allocation
-    }
-
-    return checker;
-}
-
-
-// NSHOOF EL WAITING QUEUE
-void deallocate(int processID, char *memAlgo, void *memory ){
-    if (atoi(memAlgo) == 4)
-    {// Buddy System allocation
-
-    }
-    else{
-
-    }
-}
-
 void insertQueue(queue *readyQueue, pcb *current_process_b, char *algo, char *quantum)
 {
 

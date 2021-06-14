@@ -1,18 +1,21 @@
 #include <string.h>
 #include <stdio.h>
 #include "headers.h"
-#include "dataStructures.h"
+#include "memory_dataStructures.h"
 
+/// Msgbuff to send and receive packages through the message queue
 struct msgbuff
 {
     long mtype;
     processData mmsg;
 };
 
+/// Forward decleration of the handler
 void clearResources(int signum);
+/// Forward decleration of the logger
 void sheduler_logger(int, node *);
-// void handler (int signum);
 
+/// Global semaphores and shared memory (to be able to destroy it in the handler)
 union Semun semun;
 int sem1, sem2, sem3, sem4, shm_id_one;
 node *current_running_process;
@@ -21,22 +24,24 @@ FILE *fp_log;
 int main(int argc, char *argv[])
 {
     signal(SIGINT, clearResources);
-    // signal(SIGUSR1, handler);
 
     // Open file
     fp_log = fopen("./scheduler.log", "w");
     fprintf(fp_log, "#At\ttime\tx\tprocess\ty\tstate    \t\tarr\tw\ttotal\tz\tremain\ty\twait\tk\n");
 
+    // The arguments sent from the process generator as arguments (chosen algo and the quantum)
     char *algo = argv[1];
     char *quantum = argv[2];
+    char* memAlgo = "4";
     printf("ARGC: %d\tARGUMENT SENT: %s   %s\n", argc, algo, quantum);
 
     key_t msg_queue_key_id, shr_mem_id, sem2_id, sem3_id, sem4_id;
     int process_msgq_id;
 
-    msg_queue_key_id = ftok("keyfile", 'a'); //create unique key
-    shr_mem_id = ftok("keyfile", 'b');       //create unique key
-    sem2_id = ftok("keyfile", 'c');          //create unique key
+    /////////////////////// Creating unique keys from the shared memory, msg queue and the semaphores////////////////
+    msg_queue_key_id = ftok("keyfile", 'a');
+    shr_mem_id = ftok("keyfile", 'b');
+    sem2_id = ftok("keyfile", 'c');
     sem3_id = ftok("keyfile", 'd');
     sem4_id = ftok("keyfile", 'e');
 
@@ -48,10 +53,6 @@ int main(int argc, char *argv[])
     sem2 = semget(sem2_id, 1, 0666 | IPC_CREAT);
     sem3 = semget(sem3_id, 1, 0666 | IPC_CREAT);
     sem4 = semget(sem4_id, 1, 0666 | IPC_CREAT);
-
-    //open files
-    //FILE *fp_log = fopen("./scheduler.log", "w");
-    //fprintf(fp_log,"#At time x process y state arr w total z remain y wait k\n");
 
     if (process_msgq_id == -1 || shm_id_one == -1 || sem1 == -1 || sem2 == -1 || sem3 == -1)
     {
@@ -71,30 +72,35 @@ int main(int argc, char *argv[])
         perror("Error in semctl");
         exit(-1);
     }
-    // if (semctl(sem3, 0, SETVAL, semun) == -1)
-    // {
-    //     perror("Error in semctl");
-    //     exit(-1);
-    // }
-    // semun.val = 1;
-
     if (semctl(sem2, 0, SETVAL, semun) == -1)
     {
         perror("Error in semctl");
         exit(-1);
     }
 
+    // Initialize the clk
     initClk();
+
+    //Initialize the ready queue
     queue readyQueue;
     initQueue(&readyQueue);
+
+    queue waitingQueue;
+    initQueue(&waitingQueue);
+
+    // Initialize the memory with a linked list
+    linkedList* theMemory = initLinkedList();
+
     struct msgbuff process;
-    printf("Hello frm scheduler!\n");
+    // printf("Hello from scheduler!\n");
     int index = 0;
+
     current_running_process = (node *)malloc(sizeof(node));
     current_running_process = NULL;
     char *number_temp = malloc(sizeof(char));
-    //  pcb *pData = (struct pcb *)malloc(1 * sizeof( pcb));
     int currentTime = -1;
+
+    // The quantum sent
     int q;
     if (quantum != NULL)
     {
@@ -105,17 +111,18 @@ int main(int argc, char *argv[])
     {
         perror("Not enough arguments !");
     }
+
     int local_quantum = q;
     bool quantumFinished = false;
     while (1)
     {
+        allocateTheWaitingList( &waitingQueue ,theMemory );
         // To get time use this function.
         down(sem3);
         int x = getClk();
 
         int rec_val = 0;
         // To check if more than 1 process arrived at the same time step
-        // down(sem3);
         while (rec_val != -1)
         {
 
@@ -135,26 +142,36 @@ int main(int argc, char *argv[])
                 current_process_b->remainingTime = process.mmsg.runningtime;
                 current_process_b->waitingTime = 0;
 
-                // Forking a new process
-                int pid_process = fork();
-                if (pid_process == -1)
+                bool canAllocate = checkAvailableMem( current_process_b , memAlgo, theMemory);
+                printf("\n %d\n", canAllocate);
+                if (!canAllocate)
                 {
-                    perror("error in fork");
+                    node* new_node = newNode(current_process_b);
+                    enqueue(&waitingQueue, new_node);
                 }
-                else if (pid_process == 0) // If the process is a child
+                else
                 {
-                    char *const argv_scheduler[] = {"./process.out", NULL};
-                    if (execv(argv_scheduler[0], argv_scheduler) == -1)
+
+                    // Forking a new process
+                    int pid_process = fork();
+                    if (pid_process == -1)
                     {
-                        printf("error in executing the file");
+                        perror("error in fork");
                     }
+                    else if (pid_process == 0) // If the process is a child
+                    {
+                        char *const argv_scheduler[] = {"./process.out", NULL};
+                        if (execv(argv_scheduler[0], argv_scheduler) == -1)
+                        {
+                            printf("error in executing the file");
+                        }
+                    }
+
+                    current_process_b->pid = pid_process;
+                    // Insert the new process into a queue according to the algorithm recieved
+                    insertQueue(&readyQueue, current_process_b, algo, quantum);
+                    kill(pid_process, SIGSTOP);
                 }
-
-                current_process_b->pid = pid_process;
-                // Insert the new process into a queue according to the algorithm recieved
-                insertQueue(&readyQueue, current_process_b, algo, quantum);
-                kill(pid_process, SIGSTOP);
-
                 /*
                     int excutionTime;
                 */
@@ -165,7 +182,7 @@ int main(int argc, char *argv[])
         {
             currentTime = x;
             if (atoi(algo) == 1) //--------------------------------------------->FCFS
-            {                    /// FCFS
+            {    
                 if (!isEmpty(readyQueue) || current_running_process != NULL)
                 {
                     if (current_running_process == NULL)
@@ -190,7 +207,9 @@ int main(int argc, char *argv[])
                     {
                         current_running_process->data->state = 3;
                         sheduler_logger(currentTime + 1, current_running_process);
+                        deallocate(current_running_process->data->pid, memAlgo , theMemory);
                         current_running_process = NULL;
+                        
                     }
                 }
             }
@@ -223,6 +242,7 @@ int main(int argc, char *argv[])
 
                         current_running_process->data->state = 3;
                         sheduler_logger(currentTime + 1, current_running_process);
+                        deallocate(current_running_process->data->process.id, memAlgo , theMemory);
                         current_running_process = NULL;
                     }
                 }
@@ -301,6 +321,7 @@ int main(int argc, char *argv[])
 
                         current_running_process->data->state = 3;
                         sheduler_logger(x + 1, current_running_process);
+                        deallocate(current_running_process->data->process.id, memAlgo , theMemory);
 
                         current_running_process = NULL;
                     }
@@ -391,6 +412,7 @@ int main(int argc, char *argv[])
 
                         current_running_process->data->state = 3;
                         sheduler_logger(x + 1, current_running_process);
+                        deallocate(current_running_process->data->process.id, memAlgo , theMemory);
 
                         current_running_process = NULL;
                     }
@@ -447,6 +469,7 @@ int main(int argc, char *argv[])
                             {
                                 current_running_process->data->state = 3;
                                 sheduler_logger(x + 1, current_running_process);
+                                deallocate(current_running_process->data->process.id, memAlgo , theMemory);
                                 current_running_process = NULL;
                             }
                             else
@@ -469,6 +492,7 @@ int main(int argc, char *argv[])
                             {
                                 current_running_process->data->state = 3;
                                 sheduler_logger(x + 1, current_running_process);
+                                deallocate(current_running_process->data->process.id, memAlgo , theMemory);
                                 current_running_process = NULL;
                             }
                             else
@@ -481,6 +505,7 @@ int main(int argc, char *argv[])
                 }
             }
         }
+        printLinkedList(theMemory);
     }
 
     //TODO: implement the scheduler.

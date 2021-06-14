@@ -5,33 +5,6 @@
 // #include <string.h>
 #include "dataStructures.h"
 
-/////////////////////////////////////////// INITIALIZE THE REMAINING TIME TO BE EQUAL TO THE RUNNING TIME AT THE CREATION OF THE PROCESS
-
-// typedef short bool;
-// #define true 1
-// #define false 0
-// #define totalMemSize 1024
-
-// typedef struct processData
-// {
-//     int arrivaltime;
-//     int priority;
-//     int runningtime;
-//     int memorysize;
-//     int id;
-// } processData;
-
-// typedef struct pcb
-// {
-//     struct processData process;
-//     int state; // 0 = started, 1 = resumed, 2 = stopped, 3 = finished.
-//     int startTime;
-//     int remainingTime;
-//     int waitingTime;
-//     int pid;
-// } pcb;
-
-// this memNode should hold a process and its data
 typedef struct memNode
 {
     pcb *data;
@@ -54,7 +27,7 @@ typedef struct linkedList
 linkedList *initLinkedList()
 {
     linkedList *l = (linkedList *)malloc(sizeof(linkedList));
-    memNode *baseNode;
+    memNode *baseNode = (memNode *)malloc(sizeof(memNode));
     baseNode->isFree = true;
     baseNode->size = totalMemSize;
     baseNode->startLocation = 0;
@@ -68,12 +41,12 @@ linkedList *initLinkedList()
     // q->tail = baseNode;
 }
 
-void printListMem(linkedList *q)
+void printLinkedList(linkedList *q)
 {
     memNode *current = q->head;
     while (current != NULL)
     {
-        printf("[%d,%d,%d,%d] -> ", current->size, current->isFree, current->level, current->position);
+        printf("[%d,%d] -> ", current->size, current->isFree);
         current = current->next;
     }
     printf("NULL\n");
@@ -84,71 +57,176 @@ memNode *newmemNode(pcb *pd)
 {
     memNode *temp = (memNode *)malloc(sizeof(memNode));
     temp->data = pd;
-    temp->next = NULL;
+    temp->size = pd->process.memorysize;
 
+    temp->next = NULL;
     return temp;
 }
 
-// bool enqueueIn(linkedList *l, pcb* p){
-//     memNode *start = (l->head);
-//     pcb *temp = p;
-
-//     if (start->size>=p->process.memorysize && start->isFree){
-//         start->size = start->size - p->process.memorysize;
-//         temp->next = start;
-//         l->head = temp;
-//     }
-//     // while()
-
-//     while(start->next->size<p->next->size && !start->isFree && start-> next != NULL){
-//         start  = start->next;
-//     }
-//     if (start->next->size>=p->size && !start->next->isFree ){
-//         start->next->size = start->next->size - p->size;
-//         temp->next = start->next;
-//         start->next = temp;
-//         return true;
-//     }
-//     return false;
-//     // if(start->next == NULL){
-//     //     return false;
-//     // }
-
-// }
-
-// // Function to check is list is empty
-// bool isEmpty(LinkedList q)
-// {
-//     return (q.head) == NULL;
-// }
-
-bool checkAvailableMem(pcb *current_process, char *memAlgo, void *memory)
+bool insertFirstFit(linkedList *l, pcb *p)
 {
-    bool checker = false;
-    if (atoi(memAlgo) == 1)
-    { //First Fit
-    }
-    else if (atoi(memAlgo) == 2)
-    { // Next Fit
-    }
-    else if (atoi(memAlgo) == 3)
-    { // Best Fit
-    }
-    else if (atoi(memAlgo) == 4)
-    { // Buddy System allocation
-    }
+    memNode *start = (l->head);
+    pcb *temp = p;
 
-    return checker;
+    if (start->size >= p->process.memorysize && start->isFree)
+    {
+        memNode *newNode = newmemNode(p);
+        printf("%d\n", newNode->size);
+        start->size = start->size - newNode->size;
+        newNode->next = start;
+        newNode->isFree = false;
+        l->head = newNode;
+        return true;
+    }
+    // while()
+
+    printf("%d     %d    %d\n", start->next->size, p->process.memorysize, start->next->isFree);
+    while (start->next != NULL)
+    {
+        if (start->next->size >= p->process.memorysize && start->next->isFree)
+        {
+            memNode *newNode = newmemNode(p);
+
+            start->next->size = start->next->size - p->process.memorysize;
+            newNode->next = start->next;
+            start->next = newNode;
+            newNode->isFree = false;
+            return true;
+        }
+        else
+        {
+            start = start->next;
+        }
+    }
+    return false;
+    // if(start->next == NULL){
+    //     return false;
+    // }
 }
 
-// NSHOOF EL WAITING LinkedList
-void deallocate(int processID, char *memAlgo, void *memory)
+// To dequeue using the first fit algorithm
+void dequeueFF(linkedList *list, int toBeRemovedID)
 {
-    if (atoi(memAlgo) == 4)
-    { // Buddy System allocation
-    }
-    else
+    memNode *tempNode = list->head;
+    if (tempNode->data->process.id == toBeRemovedID)
     {
+        printf("ANAAA GOWAA EL DEQUEUEEEEEEE!!!!!!!!!!!!!!!\n");
+        if (tempNode->next->isFree && tempNode->next != NULL)
+        {
+            tempNode->next->size += tempNode->size;
+            list->head = tempNode->next;
+            free(tempNode);
+            return;
+        }
+        else
+        {
+            tempNode->isFree = true;
+            // tempNode->data = NULL;
+            return;
+        }
+    }
+    while (tempNode->next != NULL)
+    {
+        if (tempNode->next->data->process.id == toBeRemovedID)
+        {
+            if (tempNode->next->next != NULL && tempNode->next->next->isFree)
+            {
+                tempNode->next->next->size += tempNode->next->size;
+                printf("\n%d\n", tempNode->next->next->size);
+                memNode *newNode = tempNode->next;
+                if (tempNode->isFree)
+                {
+                    tempNode->size += tempNode->next->next->size;
+                    tempNode->next = tempNode->next->next->next;
+                    free(newNode->next);
+                    free(newNode);
+                    return;
+                }
+
+                tempNode->next = tempNode->next->next;
+
+                free(newNode);
+                return;
+            }
+            else if (tempNode->isFree)
+            {
+                tempNode->size += tempNode->next->size;
+                memNode *newNode = tempNode->next;
+                tempNode->next = tempNode->next->next;
+                free(newNode);
+                return;
+            }
+            else
+            {
+                tempNode->next->isFree = true;
+                // tempNode->data = NULL;
+                return;
+            }
+        }
+        else
+        {
+            tempNode = tempNode->next;
+        }
+    }
+    if (tempNode->data->process.id == toBeRemovedID)
+    {
+        tempNode->next->isFree = true;
+        // tempNode->data = NULL;
+        return;
+    }
+}
+
+// // // Function to check is list is empty
+// // bool isEmpty(LinkedList q)
+// // {
+// //     return (q.head) == NULL;
+// // }
+
+void allocateTheWaitingList(queue *q, linkedList *mem)
+{
+
+    node *current_node = q->head;
+    if (q->head == NULL)
+    {
+        return;
+    }
+    while (q->head != NULL)
+    {
+        bool check = insertFirstFit(mem, current_node->data);
+        printf("ANA HENAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA   %d\n", check);
+        if (check)
+        {
+
+            q->head = current_node->next;
+            current_node = q->head;
+            // free(current_node);
+            // return;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    if (q->head == NULL)
+    {
+        return;
+    }
+
+    while (current_node->next != NULL)
+    {
+        bool check = insertFirstFit(mem, current_node->next->data);
+        if (check)
+        {
+            node *tempNode = current_node->next;
+            current_node->next = current_node->next->next;
+            // free(tempNode);
+            current_node = current_node->next;
+        }
+        else
+        {
+            current_node = current_node->next;
+        }
     }
 }
 
@@ -277,7 +355,7 @@ void adjustMergeBSA(linkedList *list)
             current = list->head->next;
         }
     }
-    
+
     current = list->head;
     int nodePosition = 1;
     while (current != NULL)
@@ -305,9 +383,9 @@ void deallocateBSA(linkedList *list, int processID)
             list->head->next = afterHead->next;
             list->head->level--;
             list->head->size *= 2;
-            free(afterHead);
+            // free(afterHead);
         }
-        free(p);
+        // free(p);
         return;
     }
 
@@ -348,7 +426,7 @@ void deallocateBSA(linkedList *list, int processID)
                     adjuster->myCount = adjustCount;
                     adjuster = adjuster->next;
                 }
-                free(toRemove);
+                // free(toRemove);
             }
         }
         else if (current->position == 2)
@@ -368,10 +446,57 @@ void deallocateBSA(linkedList *list, int processID)
                     adjuster->myCount = adjustCount;
                     adjuster = adjuster->next;
                 }
-                free(toRemove);
+                // free(toRemove);
             }
         }
         if (canMerge)
             adjustMergeBSA(list);
+    }
+}
+
+void printListMem(linkedList *q)
+{
+    memNode *current = q->head;
+    while (current != NULL)
+    {
+        printf("[%d,%d,%d,%d] -> ", current->size, current->isFree, current->level, current->position);
+        current = current->next;
+    }
+    printf("NULL\n");
+}
+
+bool checkAvailableMem(pcb *current_process, char *memAlgo, linkedList *memory)
+{
+    bool checker = false;
+    if (atoi(memAlgo) == 1)
+    { //First Fit
+        return insertFirstFit(memory, current_process);
+    }
+    else if (atoi(memAlgo) == 2)
+    { // Next Fit
+    }
+    else if (atoi(memAlgo) == 3)
+    { // Best Fit
+    }
+    else if (atoi(memAlgo) == 4)
+    { // Buddy System allocation
+        printf("INSIDE THE 4TH CONDITION -------------------------------------------------\n");
+        return insertBSA(memory, current_process);
+    }
+
+    return checker;
+}
+
+// // NSHOOF EL WAITING LinkedList
+void deallocate(int processID, char *memAlgo, linkedList *memory)
+{
+    if (atoi(memAlgo) == 4)
+    { // Buddy System allocation
+        deallocateBSA(memory, processID);
+    }
+    else
+    {
+
+        dequeueFF(memory, processID);
     }
 }

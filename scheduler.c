@@ -179,9 +179,6 @@ int main(int argc, char *argv[])
                         sprintf(number_temp, "%d", remaining_time);
                         strcpy((char *)shmaddr, number_temp);
                         kill(current_running_process->data->pid, SIGCONT);
-
-
-                    
                     }
 
                     char *number_temp = malloc(sizeof(char));
@@ -214,8 +211,6 @@ int main(int argc, char *argv[])
                         sprintf(number_temp, "%d", remaining_time);
                         strcpy((char *)shmaddr, number_temp);
                         kill(current_running_process->data->pid, SIGCONT);
-
-                      
                     }
 
                     char *number_temp = malloc(sizeof(char));
@@ -330,7 +325,7 @@ int main(int argc, char *argv[])
                         printList(&readyQueue);
                         node *n = dequeue(&readyQueue);
                         current_running_process = n;
-                       
+
                         if (current_running_process->data->state == 0)
                         {
                             current_running_process->data->startTime = currentTime; //have to check state == 0
@@ -382,14 +377,13 @@ int main(int argc, char *argv[])
                             }
                             kill(current_running_process->data->pid, SIGCONT);
 
-                            
                             sheduler_logger(x, current_running_process);
                         }
                     }
-                     char *remainingStr = malloc(sizeof(char));
+                    char *remainingStr = malloc(sizeof(char));
                     down(sem2);
                     strcpy(remainingStr, (char *)shmaddr);
-                    printf("*****from scheduler I received my remainigTime %d *****\n",atoi(remainingStr));
+                    printf("*****from scheduler I received my remainigTime %d *****\n", atoi(remainingStr));
                     current_running_process->data->remainingTime = atoi(remainingStr);
                     if (current_running_process->data->remainingTime <= 0)
                     {
@@ -410,12 +404,21 @@ int main(int argc, char *argv[])
                         local_quantum = q;
                         node *nn = dequeue(&readyQueue);
                         current_running_process = nn;
-                        current_running_process->data->startTime = currentTime; //have to check state == 0
-                        char *number_temp = malloc(sizeof(char));
-                        int remaining_time = current_running_process->data->remainingTime;
-                        printf("FROM THE PARENT: %d\n", remaining_time);
-                        sprintf(number_temp, "%d", remaining_time);
-                        strcpy((char *)shmaddr, number_temp);
+                        if (current_running_process->data->state == 2)
+                        {
+                            current_running_process->data->state = 1;
+                        }
+                        else
+                        {
+
+                            char *number_temp = malloc(sizeof(char));
+                            int remaining_time = current_running_process->data->remainingTime;
+                            printf("FROM THE PARENT: %d\n", remaining_time);
+                            sprintf(number_temp, "%d", remaining_time);
+                            strcpy((char *)shmaddr, number_temp);
+                        }
+
+                        sheduler_logger(x, current_running_process);
                         kill(current_running_process->data->pid, SIGCONT);
                         // up(sem1);
                     }
@@ -426,19 +429,37 @@ int main(int argc, char *argv[])
                     strcpy(number_temp, (char *)shmaddr);
                     current_running_process->data->remainingTime = atoi(number_temp);
                     local_quantum--;
-                    if (local_quantum <= 0 || current_running_process->data->remainingTime <= 0)
+                    if (!isEmpty(readyQueue))
                     {
-                        printList(&readyQueue);
+                        if (local_quantum <= 0 || current_running_process->data->remainingTime <= 0)
+                        {
+                            printList(&readyQueue);
+                            if (current_running_process->data->remainingTime <= 0)
+                            {
+                                current_running_process->data->state = 3;
+                                sheduler_logger(x + 1, current_running_process);
+                                current_running_process = NULL;
+                            }
+                            else
+                            {
+                                // printList(&readyQueue);
+
+                                enqueue(&readyQueue, current_running_process);
+
+                                current_running_process->data->state = 2;
+                                sheduler_logger(x, current_running_process);
+                                kill(current_running_process->data->pid, SIGSTOP);
+
+                                current_running_process = NULL;
+                            }
+                        }
+                    }
+                    else
+                    {
                         if (current_running_process->data->remainingTime <= 0)
                         {
-                            current_running_process = NULL;
-                        }
-                        else
-                        {
-                            // printList(&readyQueue);
-                            enqueue(&readyQueue, current_running_process);
-                            kill(current_running_process->data->pid, SIGSTOP);
-
+                            current_running_process->data->state = 3;
+                            sheduler_logger(x + 1, current_running_process);
                             current_running_process = NULL;
                         }
                     }

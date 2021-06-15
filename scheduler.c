@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
     // The arguments sent from the process generator as arguments (chosen algo and the quantum)
     char *algo = argv[1];
     char *quantum = argv[2];
-    char* memAlgo = "1";
+    char* memAlgo = "4";
     printf("ARGC: %d\tARGUMENT SENT: %s   %s\n", argc, algo, quantum);
 
     key_t msg_queue_key_id, shr_mem_id, sem2_id, sem3_id, sem4_id;

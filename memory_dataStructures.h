@@ -204,13 +204,7 @@ bool insertBSA(linkedList *list, pcb *p)
 
     if (list->head->next == NULL && list->head->isFree)
     {
-        if (list->head->size / 2 == p->process.memorysize)
-        {
-            list->head->data = p;
-            list->head->isFree = false;
-            return true;
-        }
-        else if (list->head->size / 2 >= p->process.memorysize)
+        if (list->head->size / 2 >= p->process.memorysize)
         {
             memNode *afterHead = newmemNodeBSA(list->head->size / 2, list->head->size / 2);
             afterHead->position = 2;

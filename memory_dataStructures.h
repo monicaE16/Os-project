@@ -168,9 +168,6 @@ bool insertFirstFit(linkedList *l, pcb *p)
                 start->next->startLocation -= p->process.memorysize;
                 start->next->isFree = false;
                 newNode->next = NULL;
-
-                // start->next->size = p->process.memorysize;
-                // start->next->startLocation-= p->process.memorysize;
                 
                 return true;
             }
@@ -279,6 +276,67 @@ void dequeueFF(linkedList *list, int toBeRemovedID)
         tempNode->next->isFree = true;
         // tempNode->data = NULL;
         return;
+    }
+}
+
+void bestFitEnqueue(linkedList *l, pcb* p) // Memory as linked list & process to add
+{
+    pcb *temp = p;
+    // memNode *bestNode = newMemNode(p);
+    memNode *bestNode;
+    if (l->head->next == NULL)
+    {
+        l->head->data = temp;
+        bestNode = l->head;
+        memNode *newNode = newmemNode(p);
+        newNode->size = p->process.memorysize;  //30
+        bestNode->size = bestNode->size - p->process.memorysize; //28
+        bestNode->isFree = true;
+        newNode->isFree = false;
+        // newNode->data->process.id = p->pid;
+        bestNode->next = newNode;
+    }
+    else
+    {
+        int bestDifference = -1;
+        int difference;
+        memNode *loopNode = l->head;
+        while (loopNode != NULL) {
+            printf("Size of loop node = %d\n", loopNode->size);
+            if (loopNode->isFree) {
+                difference = loopNode->size - p->process.memorysize;
+                printf("loopNode->size - p->process.memorysize = %d\n", difference);
+                if (difference == 0) {
+                    bestDifference = difference;
+                    bestNode = loopNode;
+                    break;
+                }
+                else if (difference >= 0 && ( difference < bestDifference || bestDifference == -1)) {
+                    bestDifference = difference;
+                    bestNode = loopNode;
+                }
+            }
+            loopNode = loopNode->next;
+        }
+
+        if (bestDifference == -1) {
+            printf("Couldn't find a node with enough available memory space!\n");
+            return;
+        } else if (bestDifference == 0) { // exact size
+            bestNode->size = p->process.memorysize;
+            bestNode->isFree = false;
+            bestNode->data = p;
+        }
+        else { // node size greater than process size = split
+            memNode *newNode = newmemNode(p);
+            newNode->size = p->process.memorysize;  //30
+            bestNode->size = bestNode->size - p->process.memorysize; //28
+            bestNode->isFree = true;
+            newNode->isFree = false;
+            // newNode->data->process.id = p->pid;
+            newNode->next = bestNode->next;
+            bestNode->next = newNode;
+        }
     }
 }
 
@@ -519,6 +577,7 @@ bool checkAvailableMem(pcb *current_process, char *memAlgo, linkedList *memory)
     }
     else if (atoi(memAlgo) == 3)
     { // Best Fit
+    bestFitEnqueue(memory, current_process);
     }
     else if (atoi(memAlgo) == 4)
     { // Buddy System allocation

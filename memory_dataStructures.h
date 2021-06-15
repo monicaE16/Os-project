@@ -62,7 +62,7 @@ memNode *newmemNode(pcb *pd)
     return temp;
 }
 //////////////////////////////// Next Fit Algorithm Related Functions ////////////////////////////
-bool insertNextFit(linkedList *list, pcb *p)
+bool insertNextFit(linkedList *list, pcb *p, FILE*fp, int currentTime)
 {
     //Assuming tail is the nextfit
     if (list->nextFit == NULL)
@@ -78,6 +78,9 @@ bool insertNextFit(linkedList *list, pcb *p)
             createdNode->data = p;
             createdNode->isFree = false;
             list->head->size -= p->process.memorysize;
+            fprintf(fp, "At\ttime\t\t%d allocated\t%d\tbytes for process \t%d\tfrom\t%d\tto\t%d\n",
+                currentTime+1, createdNode->size, createdNode->data->process.id+1, 
+                 createdNode->startLocation,createdNode->startLocation+createdNode->size);
             createdNode->next = list->head;
             list->head = createdNode;
             return true;
@@ -111,6 +114,10 @@ bool insertNextFit(linkedList *list, pcb *p)
                 createdNode->next = memFitter->next;
                 list->nextFit = NULL;
             }
+            fprintf(fp, "At\ttime\t\t%d allocated\t%d\tbytes for process \t%d\tfrom\t%d\tto\t%d\n",
+                currentTime+1, createdNode->size, createdNode->data->process.id+1, 
+                 createdNode->startLocation,createdNode->startLocation+createdNode->size);
+            
             return true;
         }
         memFitter = memFitter->next;
@@ -123,7 +130,7 @@ bool insertNextFit(linkedList *list, pcb *p)
     return false;
 }
 
-bool insertFirstFit(linkedList *l, pcb *p)
+bool insertFirstFit(linkedList *l, pcb *p, FILE* fp, int currentTime)
 {
     // printf("HELLO1!\n");
     memNode *start = (l->head);
@@ -139,6 +146,11 @@ bool insertFirstFit(linkedList *l, pcb *p)
         start->startLocation = newNode->size;
         newNode->next = start;
         newNode->isFree = false;
+
+        fprintf(fp, "At\ttime\t\t%d allocated\t%d\tbytes for process \t%d\tfrom\t%d\tto\t%d\n",
+                currentTime+1, newNode->size, newNode->data->process.id+1, 
+                 newNode->startLocation,newNode->startLocation+newNode->size);
+        
         l->head = newNode;
         newNode = NULL;
         return true;
@@ -163,12 +175,21 @@ bool insertFirstFit(linkedList *l, pcb *p)
                 start->next->isFree = false;
                 newNode->next = NULL;
 
+                fprintf(fp, "At\ttime\t\t%d allocated\t%d\tbytes for process \t%d\tfrom\t%d\tto\t%d\n",
+                currentTime+1, newNode->size, newNode->data->process.id+1, 
+                 newNode->startLocation,newNode->startLocation+newNode->size);
+                
+
                 return true;
             }
             newNode->next = start->next;
             newNode->startLocation = local_Location;
             start->next = newNode;
             newNode->isFree = false;
+            
+            fprintf(fp, "At\ttime\t\t%d allocated\t%d\tbytes for process \t%d\tfrom\t%d\tto\t%d\n",
+                currentTime+1, newNode->size, newNode->data->process.id+1, 
+                 newNode->startLocation,newNode->startLocation+newNode->size);
 
             return true;
         }
@@ -182,7 +203,7 @@ bool insertFirstFit(linkedList *l, pcb *p)
 }
 
 // To dequeue using the first fit algorithm
-void dequeueFF(linkedList *list, int toBeRemovedID)
+void dequeueFF(linkedList *list, int toBeRemovedID, FILE *fp, int currentTime)
 {
     // If the memory is empty
     if (list->head->size == 1024 && list->head->isFree)
@@ -193,6 +214,9 @@ void dequeueFF(linkedList *list, int toBeRemovedID)
     memNode *tempNode = list->head;
     if (tempNode->data->process.id == toBeRemovedID)
     {
+            fprintf(fp, "At\ttime\t\t%d   freed\t%d\tbytes for process \t%d\tfrom\t%d\tto\t%d\n",
+                currentTime+1, tempNode->size, tempNode->data->process.id+1, 
+                 tempNode->startLocation,tempNode->startLocation+tempNode->size);
         if (tempNode->next->isFree && tempNode->next != NULL)
         {
             tempNode->next->size += tempNode->size;
@@ -219,6 +243,10 @@ void dequeueFF(linkedList *list, int toBeRemovedID)
     {
         if (tempNode->next->data->process.id == toBeRemovedID)
         {
+
+                    fprintf(fp, "At\ttime\t\t%d   freed\t%d\tbytes for process \t%d\tfrom\t%d\tto\t%d\n",
+                currentTime+1, tempNode->next->size, tempNode->next->data->process.id+1, 
+                 tempNode->next->startLocation,tempNode->next->startLocation+tempNode->next->size);
             if (tempNode->next->next == NULL)
             {
                 if (tempNode->isFree)
@@ -306,7 +334,7 @@ void dequeueFF(linkedList *list, int toBeRemovedID)
     }
 }
 
-void bestFitEnqueue(linkedList *l, pcb *p) // Memory as linked list & process to add
+bool bestFitEnqueue(linkedList *l, pcb *p) // Memory as linked list & process to add
 {
     pcb *temp = p;
     // memNode *bestNode = newMemNode(p);
@@ -322,6 +350,7 @@ void bestFitEnqueue(linkedList *l, pcb *p) // Memory as linked list & process to
         newNode->isFree = false;
         // newNode->data->process.id = p->pid;
         bestNode->next = newNode;
+        return true;
     }
     else
     {
@@ -353,13 +382,14 @@ void bestFitEnqueue(linkedList *l, pcb *p) // Memory as linked list & process to
         if (bestDifference == -1)
         {
             printf("Couldn't find a node with enough available memory space!\n");
-            return;
+            return false;
         }
         else if (bestDifference == 0)
         { // exact size
             bestNode->size = p->process.memorysize;
             bestNode->isFree = false;
             bestNode->data = p;
+            return true;
         }
         else
         { // node size greater than process size = split
@@ -371,6 +401,7 @@ void bestFitEnqueue(linkedList *l, pcb *p) // Memory as linked list & process to
             // newNode->data->process.id = p->pid;
             newNode->next = bestNode->next;
             bestNode->next = newNode;
+            return true;
         }
     }
 }
@@ -512,13 +543,16 @@ void adjustMergeBSA(linkedList *list)
     }
 }
 
-void deallocateBSA(linkedList *list, int processID)
+void deallocateBSA(linkedList *list, int processID, FILE* fp, int currentTime)
 {
     if (list->head->isFree && list->head->next == NULL)
         return;
 
     if (!list->head->isFree && list->head->data->process.id == processID)
     {
+        fprintf(fp, "At\ttime\t\t%d   freed\t%d\tbytes for process \t%d\tfrom\t%d\tto\t%d\n",
+                currentTime+1, list->head->size, list->head->data->process.id+1, 
+                 list->head->startLocation,list->head->startLocation+list->head->size);
         pcb *p = list->head->data;
         list->head->isFree = true;
         list->head->data = NULL;
@@ -539,8 +573,12 @@ void deallocateBSA(linkedList *list, int processID)
     bool found = false;
     while (current != NULL)
     {
+        
         if (!current->isFree && current->data->process.id == processID)
         {
+        fprintf(fp, "At\ttime\t\t%d   freed\t%d\tbytes for process \t%d\tfrom\t%d\tto\t%d\n",
+                currentTime+1, current->size, current->data->process.id+1, 
+                 current->startLocation,current->startLocation+current->size);
             found = true;
             break;
         }
@@ -599,20 +637,20 @@ void deallocateBSA(linkedList *list, int processID)
     }
 }
 
-bool checkAvailableMem(pcb *current_process, char *memAlgo, linkedList *memory)
+bool checkAvailableMem(pcb *current_process, char *memAlgo, linkedList *memory, FILE* fp, int currentTime)
 {
     bool checker = false;
     if (atoi(memAlgo) == 1)
     { //First Fit
-        return insertFirstFit(memory, current_process);
+        return insertFirstFit(memory, current_process, fp, currentTime);
     }
     else if (atoi(memAlgo) == 2)
     {
-        return insertNextFit(memory, current_process);
+        return insertNextFit(memory, current_process, fp, currentTime);
     }
     else if (atoi(memAlgo) == 3)
     { // Best Fit
-        bestFitEnqueue(memory, current_process);
+        return bestFitEnqueue(memory, current_process);
     }
     else if (atoi(memAlgo) == 4)
     { // Buddy System allocation
@@ -623,19 +661,19 @@ bool checkAvailableMem(pcb *current_process, char *memAlgo, linkedList *memory)
 }
 
 // // NSHOOF EL WAITING LinkedList
-void deallocate(int processID, char *memAlgo, linkedList *memory)
+void deallocate(int processID, char *memAlgo, linkedList *memory, FILE *fp, int currentTime)
 {
     if (atoi(memAlgo) == 4)
     { // Buddy System allocation
-        deallocateBSA(memory, processID);
+        deallocateBSA(memory, processID, fp, currentTime);
     }
     else
     {
-        dequeueFF(memory, processID);
+        dequeueFF(memory, processID, fp, currentTime);
     }
 }
 
-void allocateTheWaitingList(queue *waitingQueue, linkedList *mem, queue *readyQueue, char *algo, char *quantum, char *memAlgo)
+void allocateTheWaitingList(queue *waitingQueue, linkedList *mem, queue *readyQueue, char *algo, char *quantum, char *memAlgo,FILE* fp, int currentTime)
 {
 
     node *current_node = waitingQueue->head;
@@ -646,7 +684,7 @@ void allocateTheWaitingList(queue *waitingQueue, linkedList *mem, queue *readyQu
 
     if (current_node != NULL)
     {
-        bool canAllocate = checkAvailableMem(current_node->data, memAlgo, mem);
+        bool canAllocate = checkAvailableMem(current_node->data, memAlgo, mem, fp, currentTime);
         printf("\n %d  %d\n", canAllocate, current_node->data->process.memorysize);
         if (canAllocate)
         {
@@ -677,7 +715,7 @@ void allocateTheWaitingList(queue *waitingQueue, linkedList *mem, queue *readyQu
 
     while (current_node->next != NULL)
     {
-        bool canAllocate = checkAvailableMem(current_node->next->data, memAlgo, mem);
+        bool canAllocate = checkAvailableMem(current_node->next->data, memAlgo, mem, fp, currentTime);
         printf("\n %d\n", canAllocate);
         if (canAllocate)
         {

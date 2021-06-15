@@ -5,22 +5,13 @@
 
 void clearResources(int);
 
-// struct processData
-// {
-//     int arrivaltime;
-//     int priority;
-//     int runningtime;
-//     int id;
-//     // int id_next_process;
-//     // int id_prev_process;
-// };
-
 struct msgbuff
 {
     long mtype;
-    // char mtext[256];
     processData mmsg;
 };
+
+int countLines();
 
 bool RearrangeByArrivalTime(processData *, int, int *, int);
 processData *pData;
@@ -30,6 +21,8 @@ int pid_scheduler;
 int main(int argc, char *argv[])
 {
     printf("\n");
+    int no_processess=countLines()-1;
+    printf("\n no of process in beginning %d \n",no_processess);
     signal(SIGINT, clearResources);
 
     // TODO Initialization
@@ -105,6 +98,7 @@ int main(int argc, char *argv[])
             current_process.arrivaltime = arrival_time;
             current_process.runningtime = runtime;
             current_process.priority = priority;
+            current_process.global_N=no_processess;
             current_process.memorysize = memSize;
             pData[index++] = current_process;
 
@@ -233,40 +227,26 @@ void clearResources(int signum)
     free(pData);
     msgctl(process_msgq_id, IPC_RMID, (struct msqid_ds *)0);
     kill(pid_scheduler,SIGINT);
+    destroyClk(true);
     exit(0);
 }
 
-// bool RearrangeByArrivalTime(struct processData *pData, int index, int *head, int tail)
-// {
-//     if (index == 1)
-//         return false;
-//     struct processData newNodeID = pData[index - 1];
-//     if (newNodeID.arrivaltime >= pData[index - 2].arrivaltime)
-//     {
-//         newNodeID.id_prev_process = tail;
-//         pData[tail].id_next_process = newNodeID.id;
+int countLines()
+{
+     FILE *fp = fopen("./processes.txt", "r");
+     char currentCharacter;
+     int totalLinesCount=0;
+while ((currentCharacter = fgetc(fp)) != EOF)
+    {
+        //6
+        if (currentCharacter == '\n')
+        {
+            totalLinesCount++;
+        }
+    }
 
-//         return false;
-//     }
-//     int temp_index = tail;
-
-//     // 2 6 5 1
-//     while (pData[temp_index].arrivaltime > newNodeID.arrivaltime && temp_index >= 0)
-//     {
-//         temp_index = pData[temp_index].id_prev_process;
-//         printf("TEMP INDEX: %d ", temp_index);
-//     }
-//     if (temp_index == -1)
-//     {
-//         pData[*head].id_prev_process = newNodeID.id;
-//         newNodeID.id_next_process = pData[*head].id;
-//         *head = newNodeID.id;
-//         return true;
-//     }
-
-//     newNodeID.id_next_process = pData[temp_index ].id;
-//     newNodeID.id_prev_process = pData[temp_index-1].id;
-//     pData[temp_index].id_next_process = newNodeID.id;
-//     pData[temp_index + 1].id_prev_process = newNodeID.id;
-//     return true;
-// }
+// totalLinesCount++;
+printf("-------------NO of lines in file %d ------------------ \n",totalLinesCount);
+fclose(fp);
+return totalLinesCount;
+}

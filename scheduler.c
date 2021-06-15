@@ -20,6 +20,14 @@ union Semun semun;
 int sem1, sem2, sem3, sem4, shm_id_one;
 node *current_running_process;
 FILE *fp_log;
+FILE *mem_log;
+FILE *fp_PERF;
+int No_proc = 0;      //real no. of processes in text file
+int counter_proc = 0; // count of finish processes
+int last_clk = 0;
+int totalWait = 0;
+float totalWTA = 0.0;
+int totalExectution = 0;
 
 int main(int argc, char *argv[])
 {
@@ -29,10 +37,13 @@ int main(int argc, char *argv[])
     fp_log = fopen("./scheduler.log", "w");
     fprintf(fp_log, "#At\ttime\tx\tprocess\ty\tstate    \t\tarr\tw\ttotal\tz\tremain\ty\twait\tk\n");
 
+    mem_log = fopen("./memory.log", "w");
+    fprintf(mem_log, "#At\ttime\tx\tallocated\ty\tbytes    \t\tfor process\tz\tfrom\ti\tto\tj\n");
+
     // The arguments sent from the process generator as arguments (chosen algo and the quantum)
     char *algo = argv[1];
     char *quantum = argv[2];
-    char* memAlgo = argv[3];
+    char *memAlgo = argv[3];
     printf("ARGC: %d\tARGUMENT SENT: %s   %s\n", argc, algo, quantum);
 
     key_t msg_queue_key_id, shr_mem_id, sem2_id, sem3_id, sem4_id;
@@ -89,7 +100,7 @@ int main(int argc, char *argv[])
     initQueue(&waitingQueue);
 
     // Initialize the memory with a linked list
-    linkedList* theMemory = initLinkedList();
+    linkedList *theMemory = initLinkedList();
 
     struct msgbuff process;
     // printf("Hello from scheduler!\n");
@@ -117,8 +128,8 @@ int main(int argc, char *argv[])
     while (1)
     {
         // To get time use this function.
-        allocateTheWaitingList( &waitingQueue ,theMemory, &readyQueue , algo, quantum, memAlgo);
-        
+        allocateTheWaitingList(&waitingQueue, theMemory, &readyQueue, algo, quantum, memAlgo, mem_log, currentTime);
+
         down(sem3);
         int x = getClk();
         printLinkedList(theMemory);
@@ -144,15 +155,21 @@ int main(int argc, char *argv[])
                 current_process_b->remainingTime = process.mmsg.runningtime;
                 current_process_b->waitingTime = 0;
 
-                bool canAllocate = checkAvailableMem( current_process_b , memAlgo, theMemory);
+                bool canAllocate = checkAvailableMem(current_process_b, memAlgo, theMemory, mem_log, currentTime);
                 printf("\n %d\n", canAllocate);
                 if (!canAllocate)
                 {
-                    node* new_node = newNode(current_process_b);
+                    node *new_node = newNode(current_process_b);
                     enqueue(&waitingQueue, new_node);
                 }
                 else
                 {
+
+                    if (No_proc == 0) //getting number of processes for one time only
+                    {
+                        No_proc = current_process_b->process.global_N;
+                        printf("******** NO of processes %d in line 140 ******** \n", No_proc);
+                    }
 
                     // Forking a new process
                     int pid_process = fork();
@@ -184,7 +201,7 @@ int main(int argc, char *argv[])
         {
             currentTime = x;
             if (atoi(algo) == 1) //--------------------------------------------->FCFS
-            {    
+            {
                 if (!isEmpty(readyQueue) || current_running_process != NULL)
                 {
                     if (current_running_process == NULL)
@@ -209,9 +226,8 @@ int main(int argc, char *argv[])
                     {
                         current_running_process->data->state = 3;
                         sheduler_logger(currentTime + 1, current_running_process);
-                        deallocate(current_running_process->data->process.id, memAlgo , theMemory);
+                        deallocate(current_running_process->data->process.id, memAlgo, theMemory, mem_log, currentTime);
                         current_running_process = NULL;
-                        
                     }
                 }
             }
@@ -244,7 +260,7 @@ int main(int argc, char *argv[])
 
                         current_running_process->data->state = 3;
                         sheduler_logger(currentTime + 1, current_running_process);
-                        deallocate(current_running_process->data->process.id, memAlgo , theMemory);
+                        deallocate(current_running_process->data->process.id, memAlgo, theMemory, mem_log, currentTime);
                         current_running_process = NULL;
                     }
                 }
@@ -323,7 +339,7 @@ int main(int argc, char *argv[])
 
                         current_running_process->data->state = 3;
                         sheduler_logger(x + 1, current_running_process);
-                        deallocate(current_running_process->data->process.id, memAlgo , theMemory);
+                        deallocate(current_running_process->data->process.id, memAlgo, theMemory, mem_log, currentTime);
 
                         current_running_process = NULL;
                     }
@@ -414,7 +430,7 @@ int main(int argc, char *argv[])
 
                         current_running_process->data->state = 3;
                         sheduler_logger(x + 1, current_running_process);
-                        deallocate(current_running_process->data->process.id, memAlgo , theMemory);
+                        deallocate(current_running_process->data->process.id, memAlgo, theMemory, mem_log, currentTime);
 
                         current_running_process = NULL;
                     }
@@ -471,7 +487,7 @@ int main(int argc, char *argv[])
                             {
                                 current_running_process->data->state = 3;
                                 sheduler_logger(x + 1, current_running_process);
-                                deallocate(current_running_process->data->process.id, memAlgo , theMemory);
+                                deallocate(current_running_process->data->process.id, memAlgo, theMemory, mem_log, currentTime);
                                 current_running_process = NULL;
                             }
                             else
@@ -494,7 +510,7 @@ int main(int argc, char *argv[])
                             {
                                 current_running_process->data->state = 3;
                                 sheduler_logger(x + 1, current_running_process);
-                                deallocate(current_running_process->data->process.id, memAlgo , theMemory);
+                                deallocate(current_running_process->data->process.id, memAlgo, theMemory, mem_log, currentTime);
                                 current_running_process = NULL;
                             }
                             else
@@ -507,12 +523,12 @@ int main(int argc, char *argv[])
                 }
             }
         }
-        
     }
 
     //TODO: implement the scheduler.
     //TODO: upon termination release the clock resources.
     fclose(fp_log);
+    fclose(mem_log);
 
     destroyClk(true);
     semctl(sem2, 0, IPC_RMID, semun);
@@ -520,17 +536,12 @@ int main(int argc, char *argv[])
     semctl(sem1, 0, IPC_RMID, semun);
 }
 
-void HighestPriorityFirst(queue *readyQueue, node *currentNode, int currentClk, FILE *fp_log)
-{
-
-    // I need to create a priority queue first
-}
-
 void clearResources(int signum)
 {
     //TODO Clears all resources in case of interruption
     printf("Clearing Resources in Scheduler...\n");
     fclose(fp_log);
+    fclose(mem_log);
     semctl(sem2, 0, IPC_RMID, semun);
     semctl(sem3, 0, IPC_RMID, semun);
     semctl(sem1, 0, IPC_RMID, semun);
@@ -564,19 +575,35 @@ void sheduler_logger(int currentTime, node *n)
     }
 
     if (nPCB->state != 3)
-        fprintf(fp_log, "#At\ttime\t%d\tprocess\t%d\t%s\t\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n", currentTime, nPD->id + 1, nState, nPD->arrivaltime, nPD->runningtime, nPCB->remainingTime, nPCB->waitingTime);
+        fprintf(fp_log, "At\ttime\t%d\tprocess\t%d\t%s\t\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n", currentTime, nPD->id + 1, nState, nPD->arrivaltime, nPD->runningtime, nPCB->remainingTime, nPCB->waitingTime);
     else
     {
         int TA = currentTime - nPD->arrivaltime;
         float WTA = (float)TA / ((float)nPD->runningtime);
+        totalWait += nPCB->waitingTime;
+        totalWTA += WTA;
+        last_clk = currentTime - 1;
+        totalExectution += nPD->runningtime;
+        counter_proc++;
         // printf("TA: %d\tRunTime: %.2f\n", TA, nPD->runningtime);
-        fprintf(fp_log, "#At\ttime\t%d\tprocess\t%d\t%s\t\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\tTA %d\tWTA %9.2f\n", currentTime, nPD->id + 1, nState, nPD->arrivaltime, nPD->runningtime, nPCB->remainingTime, nPCB->waitingTime, TA, WTA);
+        fprintf(fp_log, "At\ttime\t%d\tprocess\t%d\t%s\t\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\tTA %d\tWTA %9.2f\n", currentTime, nPD->id + 1, nState, nPD->arrivaltime, nPD->runningtime, nPCB->remainingTime, nPCB->waitingTime, TA, WTA);
     }
     free(nState);
-}
+    if (counter_proc == No_proc)
+    { //writing in scheduler.perf
 
-// void handler(int signum)
-// {
-//     current_running_process = NULL;
-//     signal(SIGUSR1, handler);
-// }
+        float avg_waiting = (float)totalWait / ((float)No_proc);
+        float avg_WTA = (float)totalWTA / ((float)No_proc);
+        float cpu_util = (float)totalExectution / ((float)last_clk);
+
+        fp_PERF = fopen("./scheduler.perf", "w");
+        fprintf(fp_PERF, "CPU utilization %.2f %% \n", cpu_util * 100.00);
+
+        fprintf(fp_PERF, "Avg WTA = %.2f  \n", avg_WTA);
+        fprintf(fp_PERF, "Avg Waiting = %.2f  \n", avg_waiting);
+
+        fclose(fp_PERF);
+
+        kill(getppid(), SIGINT);
+    }
+}

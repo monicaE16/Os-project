@@ -17,6 +17,8 @@ typedef struct processData
     int runningtime;
     int memorysize;
     int id;
+    int global_N;
+    
 } processData;
 
 typedef struct pcb

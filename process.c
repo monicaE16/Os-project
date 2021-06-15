@@ -28,17 +28,6 @@ int main(int agrc, char *argv[])
         exit(-1);
     }
 
-    // semun.val = 0; /* initial value of the semaphore, Binary semaphore */
-    // if (semctl(sem1, 0, SETVAL, semun) == -1)
-    // {
-    //     perror("Error in semctl");
-    //     exit(-1);
-    // }
-    // printf("------------------------------------BEFORE INIT----------------\n");
-
-    //TODO The process needs to get the remaining time from somewhere
-    //remainingtime = ??;
-    // down(sem1);
     char *rmtime = malloc(sizeof(char));
     char *sentrmtime = malloc(sizeof(char));
     // remainingtime = 1;
@@ -52,8 +41,6 @@ int main(int agrc, char *argv[])
     }
     while (remainingtime > 0)
     {
-        
-        // down (sem4);
         
         remainingtime -- ;
         printf("FROM THE CHILD REM TIMEE IS----------------> %d\n", remainingtime);

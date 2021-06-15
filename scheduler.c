@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
     // The arguments sent from the process generator as arguments (chosen algo and the quantum)
     char *algo = argv[1];
     char *quantum = argv[2];
-    char* memAlgo = "4";
+    char* memAlgo = "1";
     printf("ARGC: %d\tARGUMENT SENT: %s   %s\n", argc, algo, quantum);
 
     key_t msg_queue_key_id, shr_mem_id, sem2_id, sem3_id, sem4_id;
@@ -116,10 +116,10 @@ int main(int argc, char *argv[])
     bool quantumFinished = false;
     while (1)
     {
-        allocateTheWaitingList( &waitingQueue ,theMemory );
         // To get time use this function.
         down(sem3);
         int x = getClk();
+        allocateTheWaitingList( &waitingQueue ,theMemory, &readyQueue , algo, quantum, memAlgo);
 
         int rec_val = 0;
         // To check if more than 1 process arrived at the same time step
@@ -207,7 +207,7 @@ int main(int argc, char *argv[])
                     {
                         current_running_process->data->state = 3;
                         sheduler_logger(currentTime + 1, current_running_process);
-                        deallocate(current_running_process->data->pid, memAlgo , theMemory);
+                        deallocate(current_running_process->data->process.id, memAlgo , theMemory);
                         current_running_process = NULL;
                         
                     }

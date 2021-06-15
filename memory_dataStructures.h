@@ -1,8 +1,3 @@
-
-// #include <stdio.h>
-// #include <stdlib.h>
-// #include <sys/sem.h>
-// #include <string.h>
 #include "dataStructures.h"
 
 typedef struct memNode
@@ -73,44 +68,58 @@ bool insertFirstFit(linkedList *l, pcb *p)
         memNode *newNode = newmemNode(p);
         printf("%d\n", newNode->size);
         start->size = start->size - newNode->size;
+        start->startLocation = 0;
         newNode->next = start;
         newNode->isFree = false;
         l->head = newNode;
         return true;
     }
-    // while()
 
-    printf("%d     %d    %d\n", start->next->size, p->process.memorysize, start->next->isFree);
+    int local_Location = 0 + start->size;
+
     while (start->next != NULL)
     {
-        if (start->next->size >= p->process.memorysize && start->next->isFree)
+        if ((start->next->size >= p->process.memorysize) && start->next->isFree)
         {
             memNode *newNode = newmemNode(p);
 
+
             start->next->size = start->next->size - p->process.memorysize;
+            start->next->startLocation = local_Location + p->process.memorysize;
+            if ( start->next->size  == 0){
+                start->next->size = p->process.memorysize;
+                start->next->isFree = false;
+                return true;
+            }
             newNode->next = start->next;
+            newNode ->startLocation =local_Location;
             start->next = newNode;
-            newNode->isFree = false;
+             newNode->isFree = false;
+
+            
             return true;
         }
         else
         {
+            local_Location += start->size;
             start = start->next;
         }
     }
     return false;
-    // if(start->next == NULL){
-    //     return false;
-    // }
 }
 
 // To dequeue using the first fit algorithm
 void dequeueFF(linkedList *list, int toBeRemovedID)
 {
+    // If the memory is empty
+    if (list->head->size == 1024 && list->head->isFree)
+    {
+        return;
+    }
+
     memNode *tempNode = list->head;
     if (tempNode->data->process.id == toBeRemovedID)
     {
-        printf("ANAAA GOWAA EL DEQUEUEEEEEEE!!!!!!!!!!!!!!!\n");
         if (tempNode->next->isFree && tempNode->next != NULL)
         {
             tempNode->next->size += tempNode->size;
@@ -176,59 +185,6 @@ void dequeueFF(linkedList *list, int toBeRemovedID)
     }
 }
 
-// // // Function to check is list is empty
-// // bool isEmpty(LinkedList q)
-// // {
-// //     return (q.head) == NULL;
-// // }
-
-void allocateTheWaitingList(queue *q, linkedList *mem)
-{
-
-    node *current_node = q->head;
-    if (q->head == NULL)
-    {
-        return;
-    }
-    while (q->head != NULL)
-    {
-        bool check = insertFirstFit(mem, current_node->data);
-        printf("ANA HENAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA   %d\n", check);
-        if (check)
-        {
-
-            q->head = current_node->next;
-            current_node = q->head;
-            // free(current_node);
-            // return;
-        }
-        else
-        {
-            break;
-        }
-    }
-
-    if (q->head == NULL)
-    {
-        return;
-    }
-
-    while (current_node->next != NULL)
-    {
-        bool check = insertFirstFit(mem, current_node->next->data);
-        if (check)
-        {
-            node *tempNode = current_node->next;
-            current_node->next = current_node->next->next;
-            // free(tempNode);
-            current_node = current_node->next;
-        }
-        else
-        {
-            current_node = current_node->next;
-        }
-    }
-}
 
 memNode *newmemNodeBSA(int memorySize, int startLocation)
 {
@@ -344,8 +300,10 @@ void adjustMergeBSA(linkedList *list)
             prev->level--;
             prev->next = toRemove->next;
             memNode *adjuster = prev->next;
-            int adjustCount = prev->myCount;
-            while (adjuster != NULL)
+            int adjustCount;
+            if (adjuster != NULL && !adjuster->isFree)
+                adjustCount = prev->myCount;
+            while (adjuster != NULL && !adjuster->isFree)
             {
                 adjustCount++;
                 adjuster->myCount = adjustCount;
@@ -353,7 +311,11 @@ void adjustMergeBSA(linkedList *list)
             }
             prev = list->head;
             current = list->head->next;
+            continue;
         }
+        prev = current->next;
+        if (prev != NULL)
+            current = prev->next;
     }
 
     current = list->head;
@@ -373,22 +335,24 @@ void deallocateBSA(linkedList *list, int processID)
     if (list->head->isFree && list->head->next == NULL)
         return;
 
-    if (list->head->data->pid == processID)
+    if (!list->head->isFree && list->head->data->pid == processID)
     {
         pcb *p = list->head->data;
         list->head->isFree = true;
+        list->head->data = NULL;
         if (list->head->next != NULL && list->head->next->isFree)
         {
             memNode *afterHead = list->head->next;
             list->head->next = afterHead->next;
             list->head->level--;
             list->head->size *= 2;
+            adjustMergeBSA(list);
             // free(afterHead);
         }
         // free(p);
         return;
     }
-
+    
     memNode *prev = list->head;
     memNode *current = list->head->next;
     bool found = false;
@@ -419,8 +383,10 @@ void deallocateBSA(linkedList *list, int processID)
                 current->level--;
                 current->next = toRemove->next;
                 memNode *adjuster = current->next;
-                int adjustCount = current->myCount;
-                while (adjuster != NULL)
+                int adjustCount;
+                if (adjuster != NULL && !adjuster->isFree)
+                    adjustCount = current->myCount;
+                while (adjuster != NULL && !adjuster->isFree)
                 {
                     adjustCount++;
                     adjuster->myCount = adjustCount;
@@ -439,8 +405,10 @@ void deallocateBSA(linkedList *list, int processID)
                 prev->level--;
                 prev->next = toRemove->next;
                 memNode *adjuster = prev->next;
-                int adjustCount = prev->myCount;
-                while (adjuster != NULL)
+                int adjustCount;
+                if (adjuster != NULL && !adjuster->isFree)
+                    adjustCount = prev->myCount;
+                while (adjuster != NULL && !adjuster->isFree)
                 {
                     adjustCount++;
                     adjuster->myCount = adjustCount;
@@ -454,16 +422,6 @@ void deallocateBSA(linkedList *list, int processID)
     }
 }
 
-void printListMem(linkedList *q)
-{
-    memNode *current = q->head;
-    while (current != NULL)
-    {
-        printf("[%d,%d,%d,%d] -> ", current->size, current->isFree, current->level, current->position);
-        current = current->next;
-    }
-    printf("NULL\n");
-}
 
 bool checkAvailableMem(pcb *current_process, char *memAlgo, linkedList *memory)
 {
@@ -480,7 +438,6 @@ bool checkAvailableMem(pcb *current_process, char *memAlgo, linkedList *memory)
     }
     else if (atoi(memAlgo) == 4)
     { // Buddy System allocation
-        printf("INSIDE THE 4TH CONDITION -------------------------------------------------\n");
         return insertBSA(memory, current_process);
     }
 
@@ -496,7 +453,80 @@ void deallocate(int processID, char *memAlgo, linkedList *memory)
     }
     else
     {
-
         dequeueFF(memory, processID);
+    }
+}
+
+void allocateTheWaitingList(queue *waitingQueue, linkedList *mem, queue *readyQueue, char *algo, char *quantum, char* memAlgo)
+{
+
+    node *current_node = waitingQueue->head;
+    if (waitingQueue->head == NULL)
+    {
+        return;
+    }
+
+    if ( current_node != NULL){
+        bool canAllocate = checkAvailableMem(current_node->data, memAlgo, mem);
+        printf("\n %d\n", canAllocate);
+        if (canAllocate)
+        {
+            waitingQueue->head = current_node->next;
+            int pid_process = fork();
+            if (pid_process == -1)
+            {
+                perror("error in fork");
+            }
+            else if (pid_process == 0) // If the process is a child
+            {
+                char *const argv_scheduler[] = {"./process.out", NULL};
+                if (execv(argv_scheduler[0], argv_scheduler) == -1)
+                {
+                    printf("error in executing the file");
+                }
+            }
+
+            current_node->data->pid = pid_process;
+            // Insert the new process into a queue according to the algorithm recieved
+            insertQueue(readyQueue, current_node->data, algo, quantum);
+            kill(pid_process, SIGSTOP);
+            return;
+        }
+
+    }
+
+    while (current_node->next != NULL)
+    {
+        bool canAllocate = checkAvailableMem(current_node->next->data, memAlgo, mem);
+        printf("\n %d\n", canAllocate);
+        if (canAllocate)
+        {
+            node* tempNode = current_node->next;
+            current_node->next = current_node->next->next;
+
+
+            // Forking a new process
+            int pid_process = fork();
+            if (pid_process == -1)
+            {
+                perror("error in fork");
+            }
+            else if (pid_process == 0) // If the process is a child
+            {
+                char *const argv_scheduler[] = {"./process.out", NULL};
+                if (execv(argv_scheduler[0], argv_scheduler) == -1)
+                {
+                    printf("error in executing the file");
+                }
+            }
+
+            current_node->next->data->pid = pid_process;
+            // Insert the new process into a queue according to the algorithm recieved
+            insertQueue(readyQueue, current_node->next->data, algo, quantum);
+            kill(pid_process, SIGSTOP);
+            // return;
+        }
+        current_node = current_node->next;
+
     }
 }

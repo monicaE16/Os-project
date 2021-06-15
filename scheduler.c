@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
     // The arguments sent from the process generator as arguments (chosen algo and the quantum)
     char *algo = argv[1];
     char *quantum = argv[2];
-    char* memAlgo = "4";
+    char* memAlgo = argv[3];
     printf("ARGC: %d\tARGUMENT SENT: %s   %s\n", argc, algo, quantum);
 
     key_t msg_queue_key_id, shr_mem_id, sem2_id, sem3_id, sem4_id;
@@ -120,6 +120,7 @@ int main(int argc, char *argv[])
         down(sem3);
         int x = getClk();
         allocateTheWaitingList( &waitingQueue ,theMemory, &readyQueue , algo, quantum, memAlgo);
+        printLinkedList(theMemory);
 
         int rec_val = 0;
         // To check if more than 1 process arrived at the same time step
@@ -505,7 +506,7 @@ int main(int argc, char *argv[])
                 }
             }
         }
-        printLinkedList(theMemory);
+        
     }
 
     //TODO: implement the scheduler.

@@ -60,11 +60,13 @@ memNode *newmemNode(pcb *pd)
 
 bool insertFirstFit(linkedList *l, pcb *p)
 {
+    // printf("HELLO1!\n");
     memNode *start = (l->head);
     pcb *temp = p;
 
     if (start->size >= p->process.memorysize && start->isFree)
     {
+        // printf("HELLO2!\n");
         memNode *newNode = newmemNode(p);
         printf("%d\n", newNode->size);
         start->size = start->size - newNode->size;
@@ -74,6 +76,7 @@ bool insertFirstFit(linkedList *l, pcb *p)
         l->head = newNode;
         return true;
     }
+    
 
     int local_Location = 0 + start->size;
 
@@ -83,20 +86,25 @@ bool insertFirstFit(linkedList *l, pcb *p)
         {
             memNode *newNode = newmemNode(p);
 
-
             start->next->size = start->next->size - p->process.memorysize;
             start->next->startLocation = local_Location + p->process.memorysize;
-            if ( start->next->size  == 0){
-                start->next->size = p->process.memorysize;
+            if (start->next->size == 0)
+            {
+
+                start->next = newNode;
                 start->next->isFree = false;
+                newNode->next = NULL;
+
+                // start->next->size = p->process.memorysize;
+                // start->next->startLocation-= p->process.memorysize;
+                
                 return true;
             }
             newNode->next = start->next;
-            newNode ->startLocation =local_Location;
+            newNode->startLocation = local_Location;
             start->next = newNode;
-             newNode->isFree = false;
+            newNode->isFree = false;
 
-            
             return true;
         }
         else
@@ -138,6 +146,20 @@ void dequeueFF(linkedList *list, int toBeRemovedID)
     {
         if (tempNode->next->data->process.id == toBeRemovedID)
         {
+            if (tempNode->next->next == NULL)
+            {
+                if (tempNode->isFree)
+                {
+                    tempNode->size += tempNode->next->size;
+                    // tempNode->next->isFree = true;
+                    tempNode->next = NULL;
+                    return;
+                }else{
+                    tempNode->next->isFree = true;
+                    return;
+
+                }
+            }
             if (tempNode->next->next != NULL && tempNode->next->next->isFree)
             {
                 tempNode->next->next->size += tempNode->next->size;
@@ -184,7 +206,6 @@ void dequeueFF(linkedList *list, int toBeRemovedID)
         return;
     }
 }
-
 
 memNode *newmemNodeBSA(int memorySize, int startLocation)
 {
@@ -410,7 +431,6 @@ void deallocateBSA(linkedList *list, int processID)
     }
 }
 
-
 bool checkAvailableMem(pcb *current_process, char *memAlgo, linkedList *memory)
 {
     bool checker = false;
@@ -445,7 +465,7 @@ void deallocate(int processID, char *memAlgo, linkedList *memory)
     }
 }
 
-void allocateTheWaitingList(queue *waitingQueue, linkedList *mem, queue *readyQueue, char *algo, char *quantum, char* memAlgo)
+void allocateTheWaitingList(queue *waitingQueue, linkedList *mem, queue *readyQueue, char *algo, char *quantum, char *memAlgo)
 {
 
     node *current_node = waitingQueue->head;
@@ -454,9 +474,10 @@ void allocateTheWaitingList(queue *waitingQueue, linkedList *mem, queue *readyQu
         return;
     }
 
-    if ( current_node != NULL){
+    if (current_node != NULL)
+    {
         bool canAllocate = checkAvailableMem(current_node->data, memAlgo, mem);
-        printf("\n %d\n", canAllocate);
+        printf("\n %d  %d\n", canAllocate, current_node->data->process.memorysize);
         if (canAllocate)
         {
             waitingQueue->head = current_node->next;
@@ -478,10 +499,11 @@ void allocateTheWaitingList(queue *waitingQueue, linkedList *mem, queue *readyQu
             // Insert the new process into a queue according to the algorithm recieved
             insertQueue(readyQueue, current_node->data, algo, quantum);
             kill(pid_process, SIGSTOP);
-            return;
+            printf("W HNA KMAN\n");
+            // return;
         }
-
     }
+            printf("ANA HENA DELW2ty\n");
 
     while (current_node->next != NULL)
     {
@@ -489,9 +511,8 @@ void allocateTheWaitingList(queue *waitingQueue, linkedList *mem, queue *readyQu
         printf("\n %d\n", canAllocate);
         if (canAllocate)
         {
-            node* tempNode = current_node->next;
+            node *tempNode = current_node->next;
             current_node->next = current_node->next->next;
-
 
             // Forking a new process
             int pid_process = fork();
@@ -515,6 +536,5 @@ void allocateTheWaitingList(queue *waitingQueue, linkedList *mem, queue *readyQu
             // return;
         }
         current_node = current_node->next;
-
     }
 }

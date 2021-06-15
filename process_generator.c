@@ -122,6 +122,7 @@ int main(int argc, char *argv[])
     char *algoChosen = (char *)malloc(100);
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     char *quantum = (char *)malloc(100);
+    char *memAlgo = (char *)malloc(100);
     // int quantum = -1;
 
     for (int i = 2; i < argc; i++)
@@ -136,6 +137,11 @@ int main(int argc, char *argv[])
             printf("HELLOOOOOOOOOOOOOOOOOOO %s\n", argv[i+1]);
             strcpy(quantum, argv[i + 1]);
             // quantum = atoi(argv[i + 1]);
+        }
+
+        if ( !strcmp(argv[i], "-mem") )
+        {
+            strcpy(memAlgo, argv[i + 1]);
         }
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     }
@@ -176,7 +182,7 @@ int main(int argc, char *argv[])
 
         // Execute the file scheduler.out
         printf("GEN: ALGO: %s \n", algoChosen);
-        char *const argv_scheduler[] = {"./scheduler.out", algoChosen,quantum, NULL};
+        char *const argv_scheduler[] = {"./scheduler.out", algoChosen,quantum, memAlgo, NULL};
         if (execv(argv_scheduler[0], argv_scheduler) == -1)
         {
             printf("error in executing the file");

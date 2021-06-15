@@ -357,9 +357,8 @@ void adjustMergeBSA(linkedList *list)
             current = list->head->next;
             continue;
         }
-        prev = current->next;
-        if (prev != NULL)
-            current = prev->next;
+        prev = prev->next;
+        current = current->next;
     }
 
     current = list->head;
@@ -379,7 +378,7 @@ void deallocateBSA(linkedList *list, int processID)
     if (list->head->isFree && list->head->next == NULL)
         return;
 
-    if (!list->head->isFree && list->head->data->pid == processID)
+    if (!list->head->isFree && list->head->data->process.id == processID)
     {
         pcb *p = list->head->data;
         list->head->isFree = true;
@@ -396,13 +395,12 @@ void deallocateBSA(linkedList *list, int processID)
         // free(p);
         return;
     }
-    
     memNode *prev = list->head;
     memNode *current = list->head->next;
     bool found = false;
     while (current != NULL)
     {
-        if (current->data->pid == processID)
+        if (!current->isFree && current->data->process.id == processID)
         {
             found = true;
             break;
@@ -416,12 +414,10 @@ void deallocateBSA(linkedList *list, int processID)
         current->isFree = true;
         pcb *p = current->data;
         current->data = NULL;
-        bool canMerge = false;
         if (current->position == 1)
         {
             if (current->next != NULL && current->level == current->next->level && current->next->isFree)
             {
-                canMerge = true;
                 current->size *= 2;
                 memNode *toRemove = current->next;
                 current->level--;
@@ -443,7 +439,6 @@ void deallocateBSA(linkedList *list, int processID)
         {
             if (prev->isFree && prev->level == current->level)
             {
-                canMerge = true;
                 prev->size *= 2;
                 memNode *toRemove = current;
                 prev->level--;
@@ -461,8 +456,7 @@ void deallocateBSA(linkedList *list, int processID)
                 // free(toRemove);
             }
         }
-        if (canMerge)
-            adjustMergeBSA(list);
+        adjustMergeBSA(list);
     }
 }
 

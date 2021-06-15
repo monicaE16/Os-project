@@ -117,9 +117,10 @@ int main(int argc, char *argv[])
     while (1)
     {
         // To get time use this function.
+        allocateTheWaitingList( &waitingQueue ,theMemory, &readyQueue , algo, quantum, memAlgo);
+        
         down(sem3);
         int x = getClk();
-        allocateTheWaitingList( &waitingQueue ,theMemory, &readyQueue , algo, quantum, memAlgo);
         printLinkedList(theMemory);
 
         int rec_val = 0;

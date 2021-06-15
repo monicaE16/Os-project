@@ -61,70 +61,64 @@ memNode *newmemNode(pcb *pd)
     temp->next = NULL;
     return temp;
 }
-
-bool insertNextFit(linkedList *l, pcb *p)
+//////////////////////////////// Next Fit Algorithm Related Functions ////////////////////////////
+bool insertNextFit(linkedList *list, pcb *p)
 {
-    memNode *tempStart = (l->nextFit); //this pointer prevents me from rotating in an infinite loop
-    pcb *temp = p;
+    //Assuming tail is the nextfit
+    if (list->nextFit == NULL)
+        return false;
 
-    if (l->nextFit->size >= p->process.memorysize && l->nextFit->isFree)
+    if (list->head->next == NULL)
     {
-        memNode *newNode = newmemNode(p);
-        printf("%d\n", newNode->size);
-        l->nextFit->size = l->nextFit->size - newNode->size;
-        newNode->startLocation = 0;
-        l->nextFit->startLocation = newNode->size;
-        newNode->next = l->nextFit;
-        newNode->isFree = false;
-        if (l->nextFit->startLocation==0)
+        if (list->nextFit->isFree && list->nextFit->size >= p->process.memorysize)
         {
-            l->head = newNode;
+            memNode *createdNode = newmemNode(p);
+            createdNode->startLocation = 0;
+            createdNode->size = p->process.memorysize;
+            createdNode->data = p;
+            createdNode->isFree = false;
+            list->head->size -= p->process.memorysize;
+            createdNode->next = list->head;
+            list->head = createdNode;
+            return true;
         }
-        newNode = NULL;
-        return true;
+        return false;
     }
 
-    int local_Location = l->nextFit->startLocation + l->nextFit->size;
-    while (l->nextFit != tempStart)
+    memNode *memFitter = list->nextFit;
+    bool isWrapped = false;
+    while (memFitter != NULL)
     {
-        while (l->nextFit->next != NULL)
+        if (isWrapped == true && memFitter == list->nextFit)
+            return false;
+
+        if (memFitter->isFree && memFitter->size >= p->process.memorysize)
         {
-            if ((l->nextFit->next->size >= p->process.memorysize) && l->nextFit->next->isFree)
+            memNode *getterPrevFitter = list->head;
+            while (getterPrevFitter->next != NULL && getterPrevFitter->next != memFitter)
+                getterPrevFitter = getterPrevFitter->next;
+
+            memNode *createdNode = newmemNode(p);
+            createdNode->startLocation = memFitter->startLocation;
+            createdNode->size = p->process.memorysize;
+            createdNode->data = p;
+            createdNode->isFree = false;
+            createdNode->next = memFitter;
+            memFitter->size -= p->process.memorysize;
+            getterPrevFitter->next = createdNode;
+            if (memFitter->size == 0)
             {
-                memNode *newNode = newmemNode(p);
-
-                l->nextFit->next->size = l->nextFit->next->size - p->process.memorysize;
-                l->nextFit->next->startLocation = local_Location + p->process.memorysize;
-                if (l->nextFit->next->size == 0)
-                { ////////
-
-   
-                    newNode->startLocation = l->nextFit->next->startLocation - p->process.memorysize;
-                    newNode->isFree = false;
-
-                    l->nextFit->next = newNode;
-                    newNode->next = NULL;
-
-                    
-                    l->nextFit=newNode;
-                    return true;
-                }
-                newNode->next = l->nextFit->next;
-                newNode->startLocation = local_Location;
-                l->nextFit->next = newNode; //
-                newNode->isFree = false;
-                 
-                l->nextFit=newNode; 
-                return true;
+                createdNode->next = memFitter->next;
+                list->nextFit = NULL;
             }
-            else
-            {
-                local_Location += l->nextFit->next->size; //should be start next
-                l->nextFit = l->nextFit->next;
-            }
+            return true;
         }
-        //wrap around
-        l->nextFit = l->head;
+        memFitter = memFitter->next;
+        if (memFitter == NULL)
+        {
+            memFitter = list->head;
+            isWrapped = true;
+        }
     }
     return false;
 }
@@ -149,7 +143,6 @@ bool insertFirstFit(linkedList *l, pcb *p)
         newNode = NULL;
         return true;
     }
-    
 
     int local_Location = 0 + start->size;
 
@@ -163,12 +156,13 @@ bool insertFirstFit(linkedList *l, pcb *p)
             start->next->startLocation = local_Location + p->process.memorysize;
             if (start->next->size == 0)
             {
+                start->next = newNode;
 
                 start->next->size = p->process.memorysize;
                 start->next->startLocation -= p->process.memorysize;
                 start->next->isFree = false;
                 newNode->next = NULL;
-                
+
                 return true;
             }
             newNode->next = start->next;
@@ -203,12 +197,20 @@ void dequeueFF(linkedList *list, int toBeRemovedID)
         {
             tempNode->next->size += tempNode->size;
             list->head = tempNode->next;
+            if (list->nextFit == NULL)
+            {
+                list->nextFit = list->head;
+            }
             free(tempNode);
             return;
         }
         else
         {
             tempNode->isFree = true;
+            if (list->nextFit == NULL)
+            {
+                list->nextFit = tempNode;
+            }
             // tempNode->data = NULL;
             return;
         }
@@ -222,6 +224,11 @@ void dequeueFF(linkedList *list, int toBeRemovedID)
                 if (tempNode->isFree)
                 {
                     tempNode->size += tempNode->next->size;
+                    if (list->nextFit == NULL)
+                    {
+                        list->nextFit = tempNode;
+                    }
+
                     // tempNode->next->isFree = true;
                     tempNode->next = NULL;
                     return;
@@ -229,6 +236,10 @@ void dequeueFF(linkedList *list, int toBeRemovedID)
                 else
                 {
                     tempNode->next->isFree = true;
+                    if (list->nextFit == NULL)
+                    {
+                        list->nextFit = tempNode->next;
+                    }
                     return;
                 }
             }
@@ -241,12 +252,22 @@ void dequeueFF(linkedList *list, int toBeRemovedID)
                 {
                     tempNode->size += tempNode->next->next->size;
                     tempNode->next = tempNode->next->next->next;
+                    newNode->next = NULL;
+                    newNode = NULL;
+                    if (list->nextFit == NULL)
+                    {
+                        list->nextFit = tempNode;
+                    }
                     free(newNode->next);
                     free(newNode);
                     return;
                 }
 
                 tempNode->next = tempNode->next->next;
+                if (list->nextFit == NULL)
+                {
+                    list->nextFit = tempNode->next;
+                }
 
                 free(newNode);
                 return;
@@ -256,13 +277,20 @@ void dequeueFF(linkedList *list, int toBeRemovedID)
                 tempNode->size += tempNode->next->size;
                 memNode *newNode = tempNode->next;
                 tempNode->next = tempNode->next->next;
+                if (list->nextFit == NULL)
+                {
+                    list->nextFit = tempNode;
+                }
                 free(newNode);
                 return;
             }
             else
             {
                 tempNode->next->isFree = true;
-                // tempNode->data = NULL;
+                if (list->nextFit == NULL)
+                {
+                    list->nextFit = tempNode->next;
+                }
                 return;
             }
         }
@@ -274,12 +302,11 @@ void dequeueFF(linkedList *list, int toBeRemovedID)
     if (tempNode->data->process.id == toBeRemovedID)
     {
         tempNode->next->isFree = true;
-        // tempNode->data = NULL;
         return;
     }
 }
 
-void bestFitEnqueue(linkedList *l, pcb* p) // Memory as linked list & process to add
+void bestFitEnqueue(linkedList *l, pcb *p) // Memory as linked list & process to add
 {
     pcb *temp = p;
     // memNode *bestNode = newMemNode(p);
@@ -289,7 +316,7 @@ void bestFitEnqueue(linkedList *l, pcb* p) // Memory as linked list & process to
         l->head->data = temp;
         bestNode = l->head;
         memNode *newNode = newmemNode(p);
-        newNode->size = p->process.memorysize;  //30
+        newNode->size = p->process.memorysize;                   //30
         bestNode->size = bestNode->size - p->process.memorysize; //28
         bestNode->isFree = true;
         newNode->isFree = false;
@@ -301,17 +328,21 @@ void bestFitEnqueue(linkedList *l, pcb* p) // Memory as linked list & process to
         int bestDifference = -1;
         int difference;
         memNode *loopNode = l->head;
-        while (loopNode != NULL) {
+        while (loopNode != NULL)
+        {
             printf("Size of loop node = %d\n", loopNode->size);
-            if (loopNode->isFree) {
+            if (loopNode->isFree)
+            {
                 difference = loopNode->size - p->process.memorysize;
                 printf("loopNode->size - p->process.memorysize = %d\n", difference);
-                if (difference == 0) {
+                if (difference == 0)
+                {
                     bestDifference = difference;
                     bestNode = loopNode;
                     break;
                 }
-                else if (difference >= 0 && ( difference < bestDifference || bestDifference == -1)) {
+                else if (difference >= 0 && (difference < bestDifference || bestDifference == -1))
+                {
                     bestDifference = difference;
                     bestNode = loopNode;
                 }
@@ -319,17 +350,21 @@ void bestFitEnqueue(linkedList *l, pcb* p) // Memory as linked list & process to
             loopNode = loopNode->next;
         }
 
-        if (bestDifference == -1) {
+        if (bestDifference == -1)
+        {
             printf("Couldn't find a node with enough available memory space!\n");
             return;
-        } else if (bestDifference == 0) { // exact size
+        }
+        else if (bestDifference == 0)
+        { // exact size
             bestNode->size = p->process.memorysize;
             bestNode->isFree = false;
             bestNode->data = p;
         }
-        else { // node size greater than process size = split
+        else
+        { // node size greater than process size = split
             memNode *newNode = newmemNode(p);
-            newNode->size = p->process.memorysize;  //30
+            newNode->size = p->process.memorysize;                   //30
             bestNode->size = bestNode->size - p->process.memorysize; //28
             bestNode->isFree = true;
             newNode->isFree = false;
@@ -577,7 +612,7 @@ bool checkAvailableMem(pcb *current_process, char *memAlgo, linkedList *memory)
     }
     else if (atoi(memAlgo) == 3)
     { // Best Fit
-    bestFitEnqueue(memory, current_process);
+        bestFitEnqueue(memory, current_process);
     }
     else if (atoi(memAlgo) == 4)
     { // Buddy System allocation
@@ -638,7 +673,7 @@ void allocateTheWaitingList(queue *waitingQueue, linkedList *mem, queue *readyQu
             // return;
         }
     }
-            printf("ANA HENA DELW2ty\n");
+    printf("ANA HENA DELW2ty\n");
 
     while (current_node->next != NULL)
     {

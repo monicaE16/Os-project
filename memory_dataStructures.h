@@ -15,6 +15,7 @@ typedef struct memNode
 typedef struct linkedList
 {
     memNode *head;
+    memNode *nextFit;
     memNode *tail;
 
 } linkedList;
@@ -23,6 +24,7 @@ linkedList *initLinkedList()
 {
     linkedList *l = (linkedList *)malloc(sizeof(linkedList));
     memNode *baseNode = (memNode *)malloc(sizeof(memNode));
+
     baseNode->isFree = true;
     baseNode->size = totalMemSize;
     baseNode->startLocation = 0;
@@ -31,7 +33,9 @@ linkedList *initLinkedList()
     baseNode->level = 0;
     baseNode->next = NULL;
     baseNode->myCount = 1;
+
     l->head = baseNode;
+    l->nextFit = l->head;
     return l;
     // q->tail = baseNode;
 }
@@ -58,6 +62,73 @@ memNode *newmemNode(pcb *pd)
     return temp;
 }
 
+bool insertNextFit(linkedList *l, pcb *p)
+{
+    memNode *tempStart = (l->nextFit); //this pointer prevents me from rotating in an infinite loop
+    pcb *temp = p;
+
+    if (l->nextFit->size >= p->process.memorysize && l->nextFit->isFree)
+    {
+        memNode *newNode = newmemNode(p);
+        printf("%d\n", newNode->size);
+        l->nextFit->size = l->nextFit->size - newNode->size;
+        newNode->startLocation = 0;
+        l->nextFit->startLocation = newNode->size;
+        newNode->next = l->nextFit;
+        newNode->isFree = false;
+        if (l->nextFit->startLocation==0)
+        {
+            l->head = newNode;
+        }
+        newNode = NULL;
+        return true;
+    }
+
+    int local_Location = l->nextFit->startLocation + l->nextFit->size;
+    while (l->nextFit != tempStart)
+    {
+        while (l->nextFit->next != NULL)
+        {
+            if ((l->nextFit->next->size >= p->process.memorysize) && l->nextFit->next->isFree)
+            {
+                memNode *newNode = newmemNode(p);
+
+                l->nextFit->next->size = l->nextFit->next->size - p->process.memorysize;
+                l->nextFit->next->startLocation = local_Location + p->process.memorysize;
+                if (l->nextFit->next->size == 0)
+                { ////////
+
+   
+                    newNode->startLocation = l->nextFit->next->startLocation - p->process.memorysize;
+                    newNode->isFree = false;
+
+                    l->nextFit->next = newNode;
+                    newNode->next = NULL;
+
+                    
+                    l->nextFit=newNode;
+                    return true;
+                }
+                newNode->next = l->nextFit->next;
+                newNode->startLocation = local_Location;
+                l->nextFit->next = newNode; //
+                newNode->isFree = false;
+                 
+                l->nextFit=newNode; 
+                return true;
+            }
+            else
+            {
+                local_Location += l->nextFit->next->size; //should be start next
+                l->nextFit = l->nextFit->next;
+            }
+        }
+        //wrap around
+        l->nextFit = l->head;
+    }
+    return false;
+}
+
 bool insertFirstFit(linkedList *l, pcb *p)
 {
     // printf("HELLO1!\n");
@@ -70,10 +141,12 @@ bool insertFirstFit(linkedList *l, pcb *p)
         memNode *newNode = newmemNode(p);
         printf("%d\n", newNode->size);
         start->size = start->size - newNode->size;
-        start->startLocation = 0;
+        newNode->startLocation = 0;
+        start->startLocation = newNode->size;
         newNode->next = start;
         newNode->isFree = false;
         l->head = newNode;
+        newNode = NULL;
         return true;
     }
     
@@ -91,7 +164,8 @@ bool insertFirstFit(linkedList *l, pcb *p)
             if (start->next->size == 0)
             {
 
-                start->next = newNode;
+                start->next->size = p->process.memorysize;
+                start->next->startLocation -= p->process.memorysize;
                 start->next->isFree = false;
                 newNode->next = NULL;
 
@@ -109,7 +183,7 @@ bool insertFirstFit(linkedList *l, pcb *p)
         }
         else
         {
-            local_Location += start->size;
+            local_Location += start->next->size; //should be start next
             start = start->next;
         }
     }
@@ -154,10 +228,11 @@ void dequeueFF(linkedList *list, int toBeRemovedID)
                     // tempNode->next->isFree = true;
                     tempNode->next = NULL;
                     return;
-                }else{
+                }
+                else
+                {
                     tempNode->next->isFree = true;
                     return;
-
                 }
             }
             if (tempNode->next->next != NULL && tempNode->next->next->isFree)
@@ -439,7 +514,8 @@ bool checkAvailableMem(pcb *current_process, char *memAlgo, linkedList *memory)
         return insertFirstFit(memory, current_process);
     }
     else if (atoi(memAlgo) == 2)
-    { // Next Fit
+    {
+        return insertNextFit(memory, current_process);
     }
     else if (atoi(memAlgo) == 3)
     { // Best Fit

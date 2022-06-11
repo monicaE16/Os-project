@@ -25,7 +25,7 @@ If you added a file to your project add it to the build section in the Makefile.
 
 ## Notes
 1. headers.h contains clk functions, it should be included anywhere the clock functions are used.
-2. You can read more about project document in `Project Phase 1 - Scheduler.pdf` and `Project Phase 2 - Memory.pdf`.
+2. You can read more about the project in `Project Phase 1 - Scheduler.pdf` and `Project Phase 2 - Memory.pdf`.
 
 ### To get time call:
 ```getClk();```
